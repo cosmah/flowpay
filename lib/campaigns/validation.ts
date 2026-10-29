@@ -28,7 +28,7 @@ const requiredText = (label: string, min = 3, max = 200) =>
     .max(max, `${label} must be ${max} characters or fewer`)
     .refine((value) => !/[<>$]/.test(value), `${label} contains invalid characters`)
 
-/** Matches Relworx brief: objective, audience, product/service, channel, tone, customer action. */
+/** Campaign brief: objective, audience, product/service, channel, tone, customer action. */
 export const campaignBriefSchema = z.object({
   projectId: z.string().trim().min(1, "Select a project"),
   title: requiredText("Title", 3, 80),

@@ -21,7 +21,7 @@ export function CampaignCreateForm() {
     return (
       <EmptyState
         title="Create a project first"
-        description="Every campaign belongs to a project. Add a project, then write the Relworx brief."
+        description="Every campaign belongs to a project. Add a project, then write the brief."
         action={
           <Button asChild>
             <Link href={ROUTES.projectNew}>New project</Link>

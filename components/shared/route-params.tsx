@@ -1,6 +1,6 @@
 import { Suspense, type ReactNode } from "react"
 
-/** Wrap awaited `params` / `searchParams` so Instant/nav can stream a shell. */
+/** Wrap awaited `params` / `searchParams` so the route can stream a shell. */
 export function RouteParams({
   children,
   fallback = (

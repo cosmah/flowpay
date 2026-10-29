@@ -1,7 +1,7 @@
 export type CampaignStatus = "draft" | "in_review" | "approved" | "changes_requested"
 
 /**
- * Relworx brief fields (Career Expo challenge):
+ * Campaign brief fields:
  * objective, audience, service/product, channel, tone, desired customer action.
  */
 export interface CampaignBrief {

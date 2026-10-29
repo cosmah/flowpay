@@ -2,23 +2,14 @@
 
 import Link from "next/link"
 import { useMemo, useState } from "react"
-import { toast } from "sonner"
+import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { CampaignForm } from "@/components/campaigns/campaign-form"
 import { EmptyState } from "@/components/shared/empty-state"
 import {
   ListToolbar,
   listControlClassName,
 } from "@/components/shared/list-toolbar"
 import { StatusBadge } from "@/components/shared/status-badge"
-import { useAuth } from "@/hooks/use-auth"
 import { useDb } from "@/hooks/use-db"
 import { useProject } from "@/hooks/use-project"
 import { useRole } from "@/hooks/use-role"
@@ -31,11 +22,9 @@ type SortKey = "updated_desc" | "updated_asc" | "title_asc" | "title_desc" | "st
 type StatusFilter = "all" | CampaignStatus
 
 export function CampaignList() {
-  const { user } = useAuth()
   const { canMarket: isMarketer } = useRole()
-  const { db, createCampaign } = useDb()
+  const { db } = useDb()
   const { projects, activeProject, activeProjectId } = useProject()
-  const [open, setOpen] = useState(false)
   const [query, setQuery] = useState("")
   const [status, setStatus] = useState<StatusFilter>("all")
   const [sort, setSort] = useState<SortKey>("updated_desc")
@@ -119,13 +108,19 @@ export function CampaignList() {
           . Switch projects from the top bar.
         </p>
         {isMarketer ? (
-          <Button
-            type="button"
-            onClick={() => setOpen(true)}
-            disabled={projects.length === 0}
-          >
-            Add new
-          </Button>
+          projects.length === 0 ? (
+            <Button type="button" disabled>
+              <Plus className="size-4" aria-hidden />
+              Add new
+            </Button>
+          ) : (
+            <Button asChild>
+              <Link href={ROUTES.campaignNew}>
+                <Plus className="size-4" aria-hidden />
+                Add new
+              </Link>
+            </Button>
+          )
         ) : null}
       </div>
 
@@ -204,9 +199,9 @@ export function CampaignList() {
           }
           description={
             projects.length === 0
-              ? "Every campaign belongs to a project. Add a project, then write the Relworx brief."
+              ? "Every campaign belongs to a project. Add a project, then write the brief."
               : projectCampaigns.length === 0
-                ? "Create a Relworx brief with objective, audience, product/service, channel, tone, and customer action."
+                ? "Create a brief with objective, audience, product/service, channel, tone, and customer action."
                 : "Try a different search, status filter, or sort order."
           }
           action={
@@ -215,8 +210,8 @@ export function CampaignList() {
                 <Link href={ROUTES.projects}>Go to projects</Link>
               </Button>
             ) : isMarketer ? (
-              <Button type="button" variant="outline" onClick={() => setOpen(true)}>
-                Add new
+              <Button asChild variant="outline">
+                <Link href={ROUTES.campaignNew}>Add new</Link>
               </Button>
             ) : undefined
           }
@@ -253,53 +248,6 @@ export function CampaignList() {
           ))}
         </ul>
       )}
-
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Add campaign</DialogTitle>
-            <DialogDescription>
-              Write a Relworx brief with objective, audience, product/service,
-              channel, tone, and customer action.
-            </DialogDescription>
-          </DialogHeader>
-          {projects.length === 0 ? (
-            <EmptyState
-              title="Create a project first"
-              description="Every campaign belongs to a project."
-              action={
-                <Button asChild>
-                  <Link href={ROUTES.projects}>Go to projects</Link>
-                </Button>
-              }
-            />
-          ) : (
-            <CampaignForm
-              mode="create"
-              projects={projects}
-              defaultProjectId={activeProjectId ?? projects[0].id}
-              submitLabel="Create campaign"
-              compact
-              onCancel={() => setOpen(false)}
-              onSubmit={async ({ projectId, brief, status: nextStatus }) => {
-                const result = await createCampaign({
-                  projectId,
-                  brief,
-                  status: nextStatus,
-                  createdBy: user?.email ?? "marketer",
-                })
-                if ("error" in result) {
-                  toast.error(result.error)
-                  return
-                }
-                toast.success("Campaign brief saved.")
-                setOpen(false)
-                window.location.assign(ROUTES.campaign(result.id))
-              }}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

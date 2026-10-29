@@ -24,3 +24,24 @@ export function withTaskMeta(task: Task, now = new Date()): TaskWithMeta {
     task.status !== "done" && new Date(task.dueDate).getTime() < now.getTime()
   return { ...task, isOverdue }
 }
+
+/** Task.owner is stored as email in Supabase; accept name for legacy rows. */
+export function taskOwnerMatches(
+  taskOwner: string,
+  member: { name: string; email: string }
+) {
+  const owner = taskOwner.trim().toLowerCase()
+  if (!owner || owner === "unassigned") return false
+  return (
+    owner === member.email.trim().toLowerCase() ||
+    owner === member.name.trim().toLowerCase()
+  )
+}
+
+export function taskOwnerLabel(
+  taskOwner: string,
+  members: { name: string; email: string }[]
+) {
+  const match = members.find((member) => taskOwnerMatches(taskOwner, member))
+  return match?.name ?? taskOwner
+}

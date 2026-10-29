@@ -98,7 +98,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
         {campaigns.length === 0 ? (
           <EmptyState
             title="No campaigns yet"
-            description="Create a Relworx brief under this project to start the content workflow."
+            description="Create a campaign brief under this project to start the content workflow."
           />
         ) : (
           <ul className="divide-y divide-border/70 overflow-hidden rounded-2xl border border-border/70 bg-[var(--rx-paper)]">

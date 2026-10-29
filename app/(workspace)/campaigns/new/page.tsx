@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import { CampaignCreateForm } from "@/components/campaigns/campaign-create-form"
-import { PageHeader } from "@/components/layout/page-header"
+import { CampaignCreateHero } from "@/components/campaigns/campaign-create-hero"
 
 export const metadata: Metadata = {
   title: "New campaign",
@@ -8,11 +8,8 @@ export const metadata: Metadata = {
 
 export default function NewCampaignPage() {
   return (
-    <div>
-      <PageHeader
-        title="New campaign"
-        description="Relworx brief: objective, audience, service/product, channel, tone, and desired customer action. Missing fields show a clear message."
-      />
+    <div className="mx-auto max-w-3xl">
+      <CampaignCreateHero />
       <CampaignCreateForm />
     </div>
   )

@@ -11,7 +11,7 @@ export default function NewProjectPage() {
     <div>
       <PageHeader
         title="New project"
-        description="Create a project container for Relworx campaign briefs and drafts."
+        description="Create a project container for campaign briefs and drafts."
       />
       <ProjectCreateForm />
     </div>

@@ -71,9 +71,16 @@ export function TeamProvider({ children }: { children: ReactNode }) {
 
   const loadMembers = useCallback(async () => {
     const supabase = createClient()
+    if (!user?.companyId) {
+      setMembers([])
+      setReady(true)
+      return
+    }
+
     const { data, error } = await supabase
       .from("profiles")
       .select("*")
+      .eq("company_id", user.companyId)
       .order("created_at", { ascending: true })
 
     if (error) {
@@ -85,7 +92,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
 
     setMembers((data ?? []).map(profileToMember))
     setReady(true)
-  }, [])
+  }, [user?.companyId])
 
   useEffect(() => {
     if (!authReady) return
@@ -155,11 +162,17 @@ export function TeamProvider({ children }: { children: ReactNode }) {
 
   const setMemberStatus = useCallback(
     async (id: string, status: TeamMemberStatus) => {
+      if (!user?.companyId) return
+      if (!members.some((member) => member.id === id)) return
       const supabase = createClient()
-      await supabase.from("profiles").update({ status }).eq("id", id)
+      await supabase
+        .from("profiles")
+        .update({ status })
+        .eq("id", id)
+        .eq("company_id", user.companyId)
       await loadMembers()
     },
-    [loadMembers]
+    [loadMembers, members, user?.companyId]
   )
 
   const deleteMember = useCallback(

@@ -160,7 +160,7 @@ export function ProjectList() {
       {filtered.length === 0 ? (
         <EmptyState
           title="No projects match"
-          description="Create a project to group Relworx campaigns, or clear search and filters."
+          description="Create a project to group campaigns, or clear search and filters."
           action={
             isMarketer ? (
               <Button type="button" variant="outline" onClick={() => setOpen(true)}>
@@ -224,7 +224,7 @@ export function ProjectList() {
           <DialogHeader>
             <DialogTitle>Add project</DialogTitle>
             <DialogDescription>
-              Projects group Relworx campaigns. You can switch the active project
+              Projects group campaigns. You can switch the active project
               from the top bar.
             </DialogDescription>
           </DialogHeader>

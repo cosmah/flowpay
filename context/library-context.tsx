@@ -52,17 +52,28 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     }) => {
       const supabase = createClient()
       const item = items.find((row) => row.id === input.libraryItemId)
+      const { data: libraryRow } = await supabase
+        .from("library")
+        .select("id, company_id, campaign_id, type, title")
+        .eq("id", input.libraryItemId)
+        .maybeSingle()
+
+      if (!libraryRow?.company_id) {
+        throw new Error("Library item not found for your company.")
+      }
+
       const { data, error } = await supabase
         .from("test_sends")
         .insert({
           library_item_id: input.libraryItemId,
-          campaign_id: item?.campaignId ?? null,
-          content_type: item?.type ?? null,
-          title: item?.title ?? null,
-          sent_to: input.sentTo ?? "delivered@resend.dev",
+          campaign_id: libraryRow.campaign_id ?? item?.campaignId ?? null,
+          content_type: libraryRow.type ?? item?.type ?? null,
+          title: libraryRow.title ?? item?.title ?? null,
+          sent_to: input.sentTo ?? "test@example.com",
           method: input.mode === "resend" ? "resend" : "simulated",
           status: input.result === "error" ? "error" : "logged",
           error_message: input.result === "error" ? input.message : null,
+          company_id: libraryRow.company_id,
         })
         .select("*")
         .single()

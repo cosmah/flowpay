@@ -1,10 +1,26 @@
 "use client"
 
-import { useState, type FormEvent } from "react"
+import { useMemo, useState, type FormEvent, type ReactNode } from "react"
+import {
+  CalendarDays,
+  Flag,
+  FolderKanban,
+  Gauge,
+  Megaphone,
+  MessageSquareText,
+  MousePointerClick,
+  Package,
+  Radio,
+  Target,
+  Type,
+  Users,
+  Zap,
+} from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Slider } from "@/components/ui/slider"
 import { Textarea } from "@/components/ui/textarea"
 import {
   CAMPAIGN_CHANNELS,
@@ -18,6 +34,9 @@ import type { Campaign, CampaignStatus, Project } from "@/types"
 import { cn } from "@/lib/utils"
 
 type Fields = Partial<Record<keyof CampaignFormValues | "form", string>>
+
+const PRIORITY_LABELS = ["Later", "Low", "Steady", "High", "Critical"] as const
+const AMBITION_LABELS = ["Soft", "Warm", "Balanced", "Bold", "Disruptive"] as const
 
 function emptyValues(projectId: string): CampaignFormValues {
   return {
@@ -47,6 +66,44 @@ function fromCampaign(campaign: Campaign): CampaignFormValues {
     deadline: campaign.brief.deadline,
     status: campaign.status,
   }
+}
+
+function FieldShell({
+  icon,
+  label,
+  htmlFor,
+  hint,
+  error,
+  children,
+  className,
+}: {
+  icon: ReactNode
+  label: string
+  htmlFor?: string
+  hint?: string
+  error?: string
+  children: ReactNode
+  className?: string
+}) {
+  return (
+    <div className={cn("space-y-2", className)}>
+      <Label
+        htmlFor={htmlFor}
+        className="flex items-center gap-2 text-sm font-medium"
+      >
+        <span className="flex size-7 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+          {icon}
+        </span>
+        {label}
+      </Label>
+      {children}
+      {error ? (
+        <p className="text-xs text-destructive">{error}</p>
+      ) : hint ? (
+        <p className="text-xs text-muted-foreground">{hint}</p>
+      ) : null}
+    </div>
+  )
 }
 
 export function CampaignForm({
@@ -79,6 +136,31 @@ export function CampaignForm({
   )
   const [fields, setFields] = useState<Fields>({})
   const [submitting, setSubmitting] = useState(false)
+  const [priority, setPriority] = useState(3)
+  const [ambition, setAmbition] = useState(3)
+
+  const priorityLabel = PRIORITY_LABELS[priority - 1]
+  const ambitionLabel = AMBITION_LABELS[ambition - 1]
+
+  const selectClassName = cn(
+    "h-10 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none",
+    "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
+    "aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20"
+  )
+
+  const filledCount = useMemo(() => {
+    const checks = [
+      values.projectId,
+      values.title.trim(),
+      values.objective.trim(),
+      values.audience.trim(),
+      values.productService.trim(),
+      values.tone.trim(),
+      values.customerAction.trim(),
+      values.channels.length > 0,
+    ]
+    return checks.filter(Boolean).length
+  }, [values])
 
   function update<K extends keyof CampaignFormValues>(
     key: K,
@@ -106,14 +188,27 @@ export function CampaignForm({
     if (submitting) return
 
     setFields({})
+    const toneWithVoice = values.tone.trim()
+      ? values.tone
+      : ambitionLabel
+
     const result = sanitizeBriefInput({
       ...values,
+      tone: toneWithVoice,
       deadline: values.deadline ?? "",
     })
 
     if ("fields" in result) {
       setFields(result.fields)
       toast.error(result.message)
+      return
+    }
+
+    if (priority >= 4 && !result.deadline) {
+      setFields({
+        deadline: "High-priority campaigns should include a deadline.",
+      })
+      toast.error("Add a deadline for high-priority work.")
       return
     }
 
@@ -136,24 +231,46 @@ export function CampaignForm({
       onSubmit={handleSubmit}
       noValidate
       className={cn(
-        "space-y-6",
+        "space-y-8",
         !compact &&
-          "rounded-2xl border border-border/70 bg-[var(--rx-paper)] p-5 sm:p-6"
+          "rounded-3xl border border-border/70 bg-[var(--rx-paper)] p-5 sm:p-8"
       )}
     >
-      <p className="text-sm text-muted-foreground">
-        Relworx brief: objective, audience, service/product, channel, tone, and
-        desired customer action. Missing fields show a clear message.
-      </p>
+      {!compact ? (
+        <div className="flex flex-col gap-3 border-b border-border/60 pb-6 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+              Brief essentials
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Required fields are validated before the campaign is saved.
+            </p>
+          </div>
+          <p className="text-sm font-medium text-[var(--rx-ink)]">
+            {filledCount}/8 ready
+          </p>
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          Capture objective, audience, offer, channel, tone, and the action you
+          want customers to take.
+        </p>
+      )}
 
-      <div className="grid gap-5 sm:grid-cols-2">
-        <div className="space-y-2 sm:col-span-2">
-          <Label htmlFor="projectId">Project</Label>
+      <div className="grid gap-6 sm:grid-cols-2">
+        <FieldShell
+          className="sm:col-span-2"
+          icon={<FolderKanban className="size-3.5" aria-hidden />}
+          label="Project"
+          htmlFor="projectId"
+          error={fields.projectId}
+          hint="Every campaign belongs to a project."
+        >
           <select
             id="projectId"
             value={values.projectId}
             aria-invalid={Boolean(fields.projectId)}
-            className="h-10 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            className={selectClassName}
             onChange={(event) => update("projectId", event.target.value)}
           >
             <option value="">Select a project</option>
@@ -163,17 +280,15 @@ export function CampaignForm({
               </option>
             ))}
           </select>
-          {fields.projectId ? (
-            <p className="text-xs text-destructive">{fields.projectId}</p>
-          ) : (
-            <p className="text-xs text-muted-foreground">
-              Every campaign belongs to a project.
-            </p>
-          )}
-        </div>
+        </FieldShell>
 
-        <div className="space-y-2 sm:col-span-2">
-          <Label htmlFor="title">Campaign title</Label>
+        <FieldShell
+          className="sm:col-span-2"
+          icon={<Type className="size-3.5" aria-hidden />}
+          label="Campaign title"
+          htmlFor="title"
+          error={fields.title}
+        >
           <Input
             id="title"
             value={values.title}
@@ -182,72 +297,81 @@ export function CampaignForm({
             className="h-10"
             onChange={(event) => update("title", event.target.value)}
           />
-          {fields.title ? (
-            <p className="text-xs text-destructive">{fields.title}</p>
-          ) : null}
-        </div>
+        </FieldShell>
 
-        <div className="space-y-2 sm:col-span-2">
-          <Label htmlFor="objective">Objective</Label>
+        <FieldShell
+          className="sm:col-span-2"
+          icon={<Target className="size-3.5" aria-hidden />}
+          label="Objective"
+          htmlFor="objective"
+          error={fields.objective}
+          hint="What should success look like for this campaign?"
+        >
           <Textarea
             id="objective"
             value={values.objective}
             aria-invalid={Boolean(fields.objective)}
-            placeholder="What should this campaign achieve?"
+            placeholder="Drive qualified demos from product marketers in the next quarter."
+            className="min-h-24"
             onChange={(event) => update("objective", event.target.value)}
           />
-          {fields.objective ? (
-            <p className="text-xs text-destructive">{fields.objective}</p>
-          ) : null}
-        </div>
+        </FieldShell>
 
-        <div className="space-y-2">
-          <Label htmlFor="audience">Audience</Label>
+        <FieldShell
+          icon={<Users className="size-3.5" aria-hidden />}
+          label="Audience"
+          htmlFor="audience"
+          error={fields.audience}
+        >
           <Input
             id="audience"
             value={values.audience}
             aria-invalid={Boolean(fields.audience)}
-            placeholder="Who is this for?"
+            placeholder="Who needs to hear this?"
             className="h-10"
             onChange={(event) => update("audience", event.target.value)}
           />
-          {fields.audience ? (
-            <p className="text-xs text-destructive">{fields.audience}</p>
-          ) : null}
-        </div>
+        </FieldShell>
 
-        <div className="space-y-2">
-          <Label htmlFor="productService">Service or product</Label>
+        <FieldShell
+          icon={<Package className="size-3.5" aria-hidden />}
+          label="Service or product"
+          htmlFor="productService"
+          error={fields.productService}
+        >
           <Input
             id="productService"
             value={values.productService}
             aria-invalid={Boolean(fields.productService)}
-            placeholder="Relworx Studio Plan"
+            placeholder="Studio Plan"
             className="h-10"
             onChange={(event) => update("productService", event.target.value)}
           />
-          {fields.productService ? (
-            <p className="text-xs text-destructive">{fields.productService}</p>
-          ) : null}
-        </div>
+        </FieldShell>
 
-        <div className="space-y-2">
-          <Label htmlFor="tone">Tone</Label>
+        <FieldShell
+          icon={<MessageSquareText className="size-3.5" aria-hidden />}
+          label="Tone"
+          htmlFor="tone"
+          error={fields.tone}
+          hint={`Creative voice leans ${ambitionLabel.toLowerCase()}.`}
+        >
           <Input
             id="tone"
             value={values.tone}
             aria-invalid={Boolean(fields.tone)}
-            placeholder="Confident, clear"
+            placeholder="Confident, clear, human"
             className="h-10"
             onChange={(event) => update("tone", event.target.value)}
           />
-          {fields.tone ? (
-            <p className="text-xs text-destructive">{fields.tone}</p>
-          ) : null}
-        </div>
+        </FieldShell>
 
-        <div className="space-y-2">
-          <Label htmlFor="customerAction">Desired customer action</Label>
+        <FieldShell
+          icon={<MousePointerClick className="size-3.5" aria-hidden />}
+          label="Desired customer action"
+          htmlFor="customerAction"
+          error={fields.customerAction}
+        >
           <Input
             id="customerAction"
             value={values.customerAction}
@@ -256,13 +380,15 @@ export function CampaignForm({
             className="h-10"
             onChange={(event) => update("customerAction", event.target.value)}
           />
-          {fields.customerAction ? (
-            <p className="text-xs text-destructive">{fields.customerAction}</p>
-          ) : null}
-        </div>
+        </FieldShell>
 
-        <div className="space-y-2">
-          <Label htmlFor="deadline">Deadline</Label>
+        <FieldShell
+          icon={<CalendarDays className="size-3.5" aria-hidden />}
+          label="Deadline"
+          htmlFor="deadline"
+          error={fields.deadline}
+          hint={priority >= 4 ? "Recommended for high priority." : "Optional"}
+        >
           <Input
             id="deadline"
             type="date"
@@ -273,19 +399,17 @@ export function CampaignForm({
               update("deadline", event.target.value || undefined)
             }
           />
-          {fields.deadline ? (
-            <p className="text-xs text-destructive">{fields.deadline}</p>
-          ) : (
-            <p className="text-xs text-muted-foreground">Optional</p>
-          )}
-        </div>
+        </FieldShell>
 
-        <div className="space-y-2">
-          <Label htmlFor="status">Status</Label>
+        <FieldShell
+          icon={<Flag className="size-3.5" aria-hidden />}
+          label="Status"
+          htmlFor="status"
+        >
           <select
             id="status"
             value={values.status}
-            className="h-10 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            className={selectClassName}
             onChange={(event) =>
               update("status", event.target.value as CampaignStatus)
             }
@@ -296,10 +420,15 @@ export function CampaignForm({
               </option>
             ))}
           </select>
-        </div>
+        </FieldShell>
 
-        <div className="space-y-2 sm:col-span-2">
-          <Label>Channel</Label>
+        <FieldShell
+          className="sm:col-span-2"
+          icon={<Radio className="size-3.5" aria-hidden />}
+          label="Channels"
+          error={fields.channels}
+          hint="Select at least one channel for this brief."
+        >
           <div className="flex flex-wrap gap-2">
             {CAMPAIGN_CHANNELS.map((channel) => {
               const active = values.channels.includes(channel)
@@ -320,14 +449,70 @@ export function CampaignForm({
               )
             })}
           </div>
-          {fields.channels ? (
-            <p className="text-xs text-destructive">{fields.channels}</p>
-          ) : (
-            <p className="text-xs text-muted-foreground">
-              Select at least one channel from the brief.
-            </p>
-          )}
-        </div>
+        </FieldShell>
+
+        {!compact ? (
+          <>
+            <FieldShell
+              icon={<Gauge className="size-3.5" aria-hidden />}
+              label={`Priority · ${priorityLabel}`}
+              hint="High priority asks for a deadline before save."
+            >
+              <div className="rounded-xl border border-border/70 bg-muted/30 px-4 py-4">
+                <Slider
+                  min={1}
+                  max={5}
+                  step={1}
+                  value={[priority]}
+                  onValueChange={(next) => setPriority(next[0] ?? 3)}
+                  aria-label="Campaign priority"
+                />
+                <div className="mt-3 flex justify-between text-[10px] uppercase tracking-wide text-muted-foreground">
+                  <span>Later</span>
+                  <span>Critical</span>
+                </div>
+              </div>
+            </FieldShell>
+
+            <FieldShell
+              icon={<Zap className="size-3.5" aria-hidden />}
+              label={`Creative ambition · ${ambitionLabel}`}
+              hint="Guides tone when the tone field is empty."
+            >
+              <div className="rounded-xl border border-border/70 bg-muted/30 px-4 py-4">
+                <Slider
+                  min={1}
+                  max={5}
+                  step={1}
+                  value={[ambition]}
+                  onValueChange={(next) => setAmbition(next[0] ?? 3)}
+                  aria-label="Creative ambition"
+                />
+                <div className="mt-3 flex justify-between text-[10px] uppercase tracking-wide text-muted-foreground">
+                  <span>Soft</span>
+                  <span>Disruptive</span>
+                </div>
+              </div>
+            </FieldShell>
+
+            <div className="sm:col-span-2 rounded-2xl border border-dashed border-border/80 bg-muted/20 px-4 py-4">
+              <p className="flex items-center gap-2 text-sm font-medium text-[var(--rx-ink)]">
+                <Megaphone className="size-4" aria-hidden />
+                Brief snapshot
+              </p>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                {values.title.trim() || "Untitled campaign"} for{" "}
+                {values.audience.trim() || "your audience"} —{" "}
+                {values.customerAction.trim() || "define the action"} via{" "}
+                {values.channels.length
+                  ? values.channels.join(", ")
+                  : "selected channels"}
+                . Priority {priorityLabel.toLowerCase()}, voice{" "}
+                {ambitionLabel.toLowerCase()}.
+              </p>
+            </div>
+          </>
+        ) : null}
       </div>
 
       {fields.form ? (
@@ -336,8 +521,8 @@ export function CampaignForm({
         </p>
       ) : null}
 
-      <div className="flex flex-wrap items-center gap-2 border-t border-border/60 pt-4">
-        <Button type="submit" disabled={submitting} className="h-10">
+      <div className="flex flex-wrap items-center gap-2 border-t border-border/60 pt-5">
+        <Button type="submit" disabled={submitting} className="h-10 min-w-36">
           {submitting
             ? mode === "create"
               ? "Creating…"

@@ -146,7 +146,7 @@ export function RegisterForm() {
               id="companyName"
               name="companyName"
               autoComplete="organization"
-              placeholder="Relworx Marketing"
+              placeholder="Acme Marketing"
               value={companyName}
               aria-invalid={Boolean(fields.companyName)}
               onChange={(event) => {

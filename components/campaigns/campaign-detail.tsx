@@ -28,7 +28,7 @@ export function CampaignDetail({ campaignId }: { campaignId: string }) {
     return (
       <EmptyState
         title="Campaign not found"
-        description="This campaign is not available in Supabase."
+        description="This campaign is not available or you do not have access."
         action={
           <Button asChild variant="outline">
             <Link href={ROUTES.campaigns}>Back to campaigns</Link>
@@ -157,13 +157,13 @@ export function CampaignDetail({ campaignId }: { campaignId: string }) {
             Drafts & visual
           </h3>
           <p className="text-xs text-muted-foreground">
-            Relworx: 2 text formats + 1 visual
+            2 text formats + 1 visual
           </p>
         </div>
         {drafts.length === 0 ? (
           <EmptyState
             title="No drafts yet"
-            description="Generate a social caption, email draft, and promotional graphic from this brief. AI or templates are allowed."
+            description="Generate a social caption, email draft, and promotional graphic from this brief."
           />
         ) : (
           <ul className="divide-y divide-border/70 overflow-hidden rounded-2xl border border-border/70 bg-[var(--rx-paper)]">

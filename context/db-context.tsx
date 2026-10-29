@@ -75,12 +75,13 @@ interface DbContextValue {
   deleteCampaign: (id: string) => Promise<boolean>
   submitDraft: (
     id: string,
-    authorName?: string
+    reviewerEmail?: string
   ) => Promise<Draft | undefined>
   requestDraftChanges: (
     id: string,
     body: string,
-    reviewerEmail?: string
+    reviewerEmail?: string,
+    authorEmail?: string
   ) => Promise<Draft | undefined>
   approveDraft: (
     id: string,
@@ -110,6 +111,31 @@ export function DbProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     const supabase = createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      setDb(emptyDb)
+      setSeededAt(null)
+      setLoading(false)
+      return
+    }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("company_id")
+      .eq("id", user.id)
+      .maybeSingle()
+
+    const companyId = profile?.company_id
+    if (!companyId) {
+      setDb(emptyDb)
+      setSeededAt(null)
+      setLoading(false)
+      return
+    }
+
     const [
       projectsRes,
       campaignsRes,
@@ -118,12 +144,36 @@ export function DbProvider({ children }: { children: ReactNode }) {
       libraryRes,
       sendsRes,
     ] = await Promise.all([
-      supabase.from("projects").select("*").order("updated_at", { ascending: false }),
-      supabase.from("campaigns").select("*").order("updated_at", { ascending: false }),
-      supabase.from("content_items").select("*").order("updated_at", { ascending: false }),
-      supabase.from("tasks").select("*").order("created_at", { ascending: false }),
-      supabase.from("library").select("*").order("approved_at", { ascending: false }),
-      supabase.from("test_sends").select("*").order("sent_at", { ascending: false }),
+      supabase
+        .from("projects")
+        .select("*")
+        .eq("company_id", companyId)
+        .order("updated_at", { ascending: false }),
+      supabase
+        .from("campaigns")
+        .select("*")
+        .eq("company_id", companyId)
+        .order("updated_at", { ascending: false }),
+      supabase
+        .from("content_items")
+        .select("*")
+        .eq("company_id", companyId)
+        .order("updated_at", { ascending: false }),
+      supabase
+        .from("tasks")
+        .select("*")
+        .eq("company_id", companyId)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("library")
+        .select("*")
+        .eq("company_id", companyId)
+        .order("approved_at", { ascending: false }),
+      supabase
+        .from("test_sends")
+        .select("*")
+        .eq("company_id", companyId)
+        .order("sent_at", { ascending: false }),
     ])
 
     const campaignRows = campaignsRes.data ?? []
@@ -257,6 +307,17 @@ export function DbProvider({ children }: { children: ReactNode }) {
       }
 
       const companyId = profile.company_id
+      const { data: project } = await supabase
+        .from("projects")
+        .select("id, company_id")
+        .eq("id", input.projectId)
+        .eq("company_id", companyId)
+        .maybeSingle()
+
+      if (!project) {
+        return { error: "Select a project from your company." }
+      }
+
       const payload = {
         ...campaignBriefToRow(input.brief),
         status: (input.status ?? "draft") as "draft",
@@ -333,6 +394,30 @@ export function DbProvider({ children }: { children: ReactNode }) {
       }
     ) => {
       const supabase = createClient()
+      if (!input.projectId) return undefined
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      const { data: profile } = user
+        ? await supabase
+            .from("profiles")
+            .select("company_id")
+            .eq("id", user.id)
+            .maybeSingle()
+        : { data: null }
+
+      if (!profile?.company_id) return undefined
+
+      const { data: project } = await supabase
+        .from("projects")
+        .select("id")
+        .eq("id", input.projectId)
+        .eq("company_id", profile.company_id)
+        .maybeSingle()
+
+      if (!project) return undefined
+
       const status =
         input.status === "changes_requested" ? "in_review" : input.status
       const { data, error } = await supabase
@@ -340,10 +425,11 @@ export function DbProvider({ children }: { children: ReactNode }) {
         .update({
           ...campaignBriefToRow(input.brief),
           status,
-          project_id: input.projectId || null,
+          project_id: input.projectId,
           updated_at: new Date().toISOString(),
         })
         .eq("id", id)
+        .eq("company_id", profile.company_id)
         .select("*")
         .single()
       if (error || !data) return undefined
@@ -365,7 +451,7 @@ export function DbProvider({ children }: { children: ReactNode }) {
   )
 
   const submitDraft = useCallback(
-    async (id: string, authorName?: string) => {
+    async (id: string, reviewerEmail?: string) => {
       const supabase = createClient()
       const due = new Date()
       due.setHours(due.getHours() + 24)
@@ -382,12 +468,29 @@ export function DbProvider({ children }: { children: ReactNode }) {
 
       if (error || !data) return undefined
 
-      await supabase.from("campaigns").update({ status: "in_review" }).eq("id", data.campaign_id)
+      const { data: campaign } = await supabase
+        .from("campaigns")
+        .select("reviewer_email")
+        .eq("id", data.campaign_id)
+        .maybeSingle()
+
+      const ownerEmail =
+        reviewerEmail?.includes("@")
+          ? reviewerEmail
+          : campaign?.reviewer_email?.includes("@")
+            ? campaign.reviewer_email
+            : null
+
+      await supabase
+        .from("campaigns")
+        .update({ status: "in_review" })
+        .eq("id", data.campaign_id)
 
       const { data: existingTask } = await supabase
         .from("tasks")
         .select("id")
         .eq("content_item_id", id)
+        .in("status", ["pending", "in_progress", "blocked"])
         .maybeSingle()
 
       if (existingTask) {
@@ -397,6 +500,8 @@ export function DbProvider({ children }: { children: ReactNode }) {
             status: "pending",
             due_date: due.toISOString().slice(0, 10),
             title: `Review: ${data.title}`,
+            owner_email: ownerEmail,
+            automated: true,
             updated_at: new Date().toISOString(),
           })
           .eq("id", existingTask.id)
@@ -405,7 +510,7 @@ export function DbProvider({ children }: { children: ReactNode }) {
           campaign_id: data.campaign_id,
           content_item_id: id,
           title: `Review: ${data.title}`,
-          owner_email: authorName?.includes("@") ? authorName : null,
+          owner_email: ownerEmail,
           due_date: due.toISOString().slice(0, 10),
           status: "pending",
           automated: true,
@@ -420,7 +525,12 @@ export function DbProvider({ children }: { children: ReactNode }) {
   )
 
   const requestDraftChanges = useCallback(
-    async (id: string, body: string, reviewerEmail?: string) => {
+    async (
+      id: string,
+      body: string,
+      reviewerEmail?: string,
+      authorEmail?: string
+    ) => {
       const supabase = createClient()
       const { data, error } = await supabase
         .from("content_items")
@@ -438,6 +548,42 @@ export function DbProvider({ children }: { children: ReactNode }) {
         decision: "changes_requested",
         feedback: body,
         reviewer_email: reviewerEmail ?? null,
+        company_id: data.company_id,
+      })
+
+      await supabase
+        .from("tasks")
+        .update({
+          status: "completed",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("content_item_id", id)
+        .in("status", ["pending", "in_progress", "blocked"])
+
+      const { data: campaign } = await supabase
+        .from("campaigns")
+        .select("owner_email")
+        .eq("id", data.campaign_id)
+        .maybeSingle()
+
+      const reviseOwner =
+        authorEmail?.includes("@")
+          ? authorEmail
+          : campaign?.owner_email?.includes("@")
+            ? campaign.owner_email
+            : null
+
+      const due = new Date()
+      due.setDate(due.getDate() + 1)
+
+      await supabase.from("tasks").insert({
+        campaign_id: data.campaign_id,
+        content_item_id: id,
+        title: `Revise: ${data.title}`,
+        owner_email: reviseOwner,
+        due_date: due.toISOString().slice(0, 10),
+        status: "pending",
+        automated: true,
         company_id: data.company_id,
       })
 

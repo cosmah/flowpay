@@ -24,7 +24,7 @@ export function ensureGraphicMarkup(content: string, title = "Promotional graphi
   </defs>
   <rect width="800" height="450" fill="url(#bg)"/>
   <path d="M80 120 C220 40, 420 40, 560 120 S780 220, 720 320" fill="none" stroke="#7fd4c7" stroke-width="6" opacity="0.7"/>
-  <text x="48" y="72" fill="#f4faf8" font-family="Georgia, serif" font-size="36" font-weight="700">Relworx</text>
+  <text x="48" y="72" fill="#f4faf8" font-family="Georgia, serif" font-size="36" font-weight="700">Campaign</text>
   <text x="48" y="118" fill="#9be0d5" font-family="system-ui, sans-serif" font-size="16">${safeTitle}</text>
   <rect x="48" y="140" width="120" height="32" rx="16" fill="#6ee7b7"/>
   <text x="68" y="161" fill="#064e3b" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Approved</text>

@@ -1,9 +1,6 @@
 import axios from "axios"
 
-/**
- * Shared HTTP client. Point NEXT_PUBLIC_API_URL at your Supabase Edge
- * Functions or API gateway when the backend is ready.
- */
+/** Shared HTTP client. Point NEXT_PUBLIC_API_URL at your API when ready. */
 export const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL ?? "/api",
   headers: {

@@ -11,7 +11,7 @@ export default function ProjectsPage() {
     <div>
       <PageHeader
         title="Projects"
-        description="Projects group Relworx campaigns. Switch the active project from the top bar or sidebar."
+        description="Projects group campaigns. Switch the active project from the top bar or sidebar."
       />
       <ProjectList />
     </div>
