@@ -1,4 +1,5 @@
 export * from "./roles"
+export * from "./project"
 export * from "./campaign"
 export * from "./draft"
 export * from "./task"

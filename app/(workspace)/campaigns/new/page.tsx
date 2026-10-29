@@ -11,7 +11,7 @@ export default function NewCampaignPage() {
     <div>
       <PageHeader
         title="New campaign"
-        description="Fill in the brief. Missing fields show clear validation before the campaign is saved."
+        description="Relworx brief: objective, audience, service/product, channel, tone, and desired customer action. Missing fields show a clear message."
       />
       <CampaignCreateForm />
     </div>

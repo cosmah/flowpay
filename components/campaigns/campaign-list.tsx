@@ -8,62 +8,64 @@ import { Input } from "@/components/ui/input"
 import { EmptyState } from "@/components/shared/empty-state"
 import { StatusBadge } from "@/components/shared/status-badge"
 import { useDb } from "@/hooks/use-db"
+import { useProject } from "@/hooks/use-project"
 import { CAMPAIGN_STATUSES } from "@/lib/campaigns/validation"
 import { ROUTES } from "@/lib/constants/routes"
 import type { CampaignStatus } from "@/types"
 import { cn } from "@/lib/utils"
 
 type SortKey = "updated_desc" | "updated_asc" | "title_asc" | "title_desc" | "status"
-
 type StatusFilter = "all" | CampaignStatus
 
 export function CampaignList() {
   const { db } = useDb()
+  const { activeProject, activeProjectId } = useProject()
   const [query, setQuery] = useState("")
   const [status, setStatus] = useState<StatusFilter>("all")
   const [sort, setSort] = useState<SortKey>("updated_desc")
+
+  const projectCampaigns = useMemo(
+    () =>
+      activeProjectId
+        ? db.campaigns.filter((c) => c.projectId === activeProjectId)
+        : db.campaigns,
+    [db.campaigns, activeProjectId]
+  )
 
   const stats = useMemo(() => {
     const counts = Object.fromEntries(
       CAMPAIGN_STATUSES.map((item) => [item, 0])
     ) as Record<CampaignStatus, number>
 
-    for (const campaign of db.campaigns) {
+    for (const campaign of projectCampaigns) {
       counts[campaign.status] += 1
     }
 
     return [
-      { label: "Total", value: db.campaigns.length, filter: "all" as StatusFilter },
+      { label: "Total", value: projectCampaigns.length, filter: "all" as StatusFilter },
       { label: "Draft", value: counts.draft, filter: "draft" as StatusFilter },
-      {
-        label: "In review",
-        value: counts.in_review,
-        filter: "in_review" as StatusFilter,
-      },
-      {
-        label: "Approved",
-        value: counts.approved,
-        filter: "approved" as StatusFilter,
-      },
+      { label: "In review", value: counts.in_review, filter: "in_review" as StatusFilter },
+      { label: "Approved", value: counts.approved, filter: "approved" as StatusFilter },
       {
         label: "Changes",
         value: counts.changes_requested,
         filter: "changes_requested" as StatusFilter,
       },
     ]
-  }, [db.campaigns])
+  }, [projectCampaigns])
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase()
 
-    let rows = db.campaigns.filter((campaign) => {
+    let rows = projectCampaigns.filter((campaign) => {
       if (status !== "all" && campaign.status !== status) return false
       if (!needle) return true
       const haystack = [
         campaign.brief.title,
         campaign.brief.objective,
         campaign.brief.audience,
-        campaign.brief.keyMessage,
+        campaign.brief.productService,
+        campaign.brief.customerAction,
         campaign.brief.channels.join(" "),
       ]
         .join(" ")
@@ -80,22 +82,26 @@ export function CampaignList() {
         case "status":
           return a.status.localeCompare(b.status)
         case "updated_asc":
-          return (
-            new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime()
-          )
+          return new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime()
         case "updated_desc":
         default:
-          return (
-            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-          )
+          return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
       }
     })
 
     return rows
-  }, [db.campaigns, query, sort, status])
+  }, [projectCampaigns, query, sort, status])
 
   return (
     <div className="space-y-6">
+      <p className="text-sm text-muted-foreground">
+        Showing campaigns for{" "}
+        <span className="font-medium text-foreground">
+          {activeProject?.name ?? "all projects"}
+        </span>
+        . Switch projects from the top bar.
+      </p>
+
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         {stats.map((stat) => (
           <button
@@ -119,9 +125,7 @@ export function CampaignList() {
             >
               {stat.label}
             </p>
-            <p className="mt-2 font-heading text-2xl tracking-tight">
-              {stat.value}
-            </p>
+            <p className="mt-2 font-heading text-2xl tracking-tight">{stat.value}</p>
           </button>
         ))}
       </div>
@@ -132,7 +136,7 @@ export function CampaignList() {
           <Input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search title, audience, message…"
+            placeholder="Search title, audience, product, action…"
             className="h-10 pl-9"
             aria-label="Search campaigns"
           />
@@ -166,14 +170,14 @@ export function CampaignList() {
 
       {filtered.length === 0 ? (
         <EmptyState
-          title={db.campaigns.length === 0 ? "No campaigns yet" : "No matches"}
+          title={projectCampaigns.length === 0 ? "No campaigns in this project" : "No matches"}
           description={
-            db.campaigns.length === 0
-              ? "Start with a brief. Validated fields unlock generation of caption, email, and visual drafts."
+            projectCampaigns.length === 0
+              ? "Create a Relworx brief with objective, audience, product/service, channel, tone, and customer action."
               : "Try a different search, status filter, or sort order."
           }
           action={
-            db.campaigns.length === 0 ? (
+            projectCampaigns.length === 0 ? (
               <Button asChild variant="outline">
                 <Link href={ROUTES.campaignNew}>Create brief</Link>
               </Button>
@@ -208,6 +212,7 @@ export function CampaignList() {
                     {campaign.brief.objective}
                   </p>
                   <p className="mt-2 text-xs text-muted-foreground">
+                    {campaign.brief.productService} ·{" "}
                     {campaign.brief.channels.join(" · ")} · Updated{" "}
                     {new Date(campaign.updatedAt).toLocaleDateString()}
                   </p>

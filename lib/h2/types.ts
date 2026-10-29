@@ -3,11 +3,13 @@ import type {
   Campaign,
   Draft,
   LibraryItem,
+  Project,
   Task,
   TestSendLog,
 } from "@/types"
 
 export type H2TableName =
+  | "projects"
   | "campaigns"
   | "drafts"
   | "tasks"
@@ -16,6 +18,7 @@ export type H2TableName =
   | "users"
 
 export interface H2Snapshot {
+  projects: Project[]
   campaigns: Campaign[]
   drafts: Draft[]
   tasks: Task[]

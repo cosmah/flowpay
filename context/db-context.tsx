@@ -9,31 +9,49 @@ import {
   type ReactNode,
 } from "react"
 import { h2, type H2Snapshot } from "@/lib/h2"
-import type { Campaign, CampaignBrief, CampaignStatus } from "@/types"
+import type {
+  Campaign,
+  CampaignBrief,
+  CampaignStatus,
+  Project,
+  ProjectStatus,
+} from "@/types"
 
 interface DbContextValue {
   db: H2Snapshot
   seededAt: string | null
   reloadFromMock: () => void
   refresh: () => void
+  createProject: (input: {
+    name: string
+    description: string
+    status?: ProjectStatus
+    createdBy: string
+  }) => Project
+  updateProject: (
+    id: string,
+    input: { name: string; description: string; status: ProjectStatus }
+  ) => Project | undefined
+  deleteProject: (id: string) => boolean
   createCampaign: (input: {
+    projectId: string
     brief: CampaignBrief
     status?: CampaignStatus
     createdBy: string
   }) => Campaign
   updateCampaign: (
     id: string,
-    input: { brief: CampaignBrief; status: CampaignStatus }
+    input: {
+      projectId: string
+      brief: CampaignBrief
+      status: CampaignStatus
+    }
   ) => Campaign | undefined
   deleteCampaign: (id: string) => boolean
 }
 
 const DbContext = createContext<DbContextValue | null>(null)
 
-/**
- * On every browser reload this provider remounts, calls `h2.connect()`,
- * and pours `/data` mock rows into the in-memory H2 tables.
- */
 export function DbProvider({ children }: { children: ReactNode }) {
   const [db, setDb] = useState<H2Snapshot>(() => h2.connect())
   const [seededAt, setSeededAt] = useState<string | null>(() => h2.getSeededAt())
@@ -48,8 +66,44 @@ export function DbProvider({ children }: { children: ReactNode }) {
     setSeededAt(h2.getSeededAt())
   }, [])
 
+  const createProject = useCallback(
+    (input: {
+      name: string
+      description: string
+      status?: ProjectStatus
+      createdBy: string
+    }) => {
+      const project = h2.createProject(input)
+      refresh()
+      return project
+    },
+    [refresh]
+  )
+
+  const updateProject = useCallback(
+    (
+      id: string,
+      input: { name: string; description: string; status: ProjectStatus }
+    ) => {
+      const project = h2.updateProject(id, input)
+      refresh()
+      return project
+    },
+    [refresh]
+  )
+
+  const deleteProject = useCallback(
+    (id: string) => {
+      const ok = h2.deleteProject(id)
+      refresh()
+      return ok
+    },
+    [refresh]
+  )
+
   const createCampaign = useCallback(
     (input: {
+      projectId: string
       brief: CampaignBrief
       status?: CampaignStatus
       createdBy: string
@@ -62,7 +116,14 @@ export function DbProvider({ children }: { children: ReactNode }) {
   )
 
   const updateCampaign = useCallback(
-    (id: string, input: { brief: CampaignBrief; status: CampaignStatus }) => {
+    (
+      id: string,
+      input: {
+        projectId: string
+        brief: CampaignBrief
+        status: CampaignStatus
+      }
+    ) => {
       const campaign = h2.updateCampaign(id, input)
       refresh()
       return campaign
@@ -85,6 +146,9 @@ export function DbProvider({ children }: { children: ReactNode }) {
       seededAt,
       reloadFromMock,
       refresh,
+      createProject,
+      updateProject,
+      deleteProject,
       createCampaign,
       updateCampaign,
       deleteCampaign,
@@ -94,6 +158,9 @@ export function DbProvider({ children }: { children: ReactNode }) {
       seededAt,
       reloadFromMock,
       refresh,
+      createProject,
+      updateProject,
+      deleteProject,
       createCampaign,
       updateCampaign,
       deleteCampaign,

@@ -7,6 +7,10 @@ export const ROUTES = {
   features: "/#features",
   howItWorks: "/#how-it-works",
   dashboard: "/dashboard",
+  projects: "/projects",
+  projectNew: "/projects/new",
+  project: (id: string) => `/projects/${id}` as const,
+  projectEdit: (id: string) => `/projects/${id}/edit` as const,
   campaigns: "/campaigns",
   campaignNew: "/campaigns/new",
   campaign: (id: string) => `/campaigns/${id}` as const,
@@ -30,6 +34,7 @@ export const WORKSPACE_NAV: {
   roles: UserRole[]
 }[] = [
   { href: ROUTES.dashboard, label: "Dashboard", roles: ["marketer", "reviewer"] },
+  { href: ROUTES.projects, label: "Projects", roles: ["marketer", "reviewer"] },
   { href: ROUTES.campaigns, label: "Campaigns", roles: ["marketer", "reviewer"] },
   { href: ROUTES.tasks, label: "Tasks", roles: ["marketer", "reviewer"] },
   { href: ROUTES.review, label: "Review", roles: ["reviewer"] },

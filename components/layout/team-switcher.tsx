@@ -1,6 +1,7 @@
 "use client"
 
-import { ChevronsUpDown, GalleryVerticalEnd, PenLine, ShieldCheck } from "lucide-react"
+import Link from "next/link"
+import { Check, ChevronsUpDown, FolderKanban, Plus } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,34 +17,15 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { useRole } from "@/hooks/use-role"
-import type { UserRole } from "@/types"
+import { useProject } from "@/hooks/use-project"
+import { ROUTES } from "@/lib/constants/routes"
+import { cn } from "@/lib/utils"
 
-const teams: {
-  name: string
-  plan: string
-  role: UserRole
-  logo: typeof GalleryVerticalEnd
-}[] = [
-  {
-    name: "FlowPay Marketing",
-    plan: "Marketer workspace",
-    role: "marketer",
-    logo: PenLine,
-  },
-  {
-    name: "FlowPay Review",
-    plan: "Reviewer workspace",
-    role: "reviewer",
-    logo: ShieldCheck,
-  },
-]
-
+/** Sidebar header project switcher (replaces workspace switcher). */
 export function TeamSwitcher() {
   const { isMobile } = useSidebar()
-  const { role, setRole } = useRole()
-  const active = teams.find((team) => team.role === role) ?? teams[0]
-  const Logo = active.logo
+  const { projects, activeProject, activeProjectId, setActiveProjectId } =
+    useProject()
 
   return (
     <SidebarMenu>
@@ -55,11 +37,15 @@ export function TeamSwitcher() {
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                <Logo className="size-4" />
+                <FolderKanban className="size-4" />
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{active.name}</span>
-                <span className="truncate text-xs">{active.plan}</span>
+                <span className="truncate font-medium">
+                  {activeProject?.name ?? "Select project"}
+                </span>
+                <span className="truncate text-xs capitalize">
+                  {activeProject?.status ?? "No project"}
+                </span>
               </div>
               <ChevronsUpDown className="ml-auto" />
             </SidebarMenuButton>
@@ -71,27 +57,39 @@ export function TeamSwitcher() {
             sideOffset={4}
           >
             <DropdownMenuLabel className="text-muted-foreground text-xs">
-              Workspaces
+              Projects
             </DropdownMenuLabel>
-            {teams.map((team, index) => (
+            {projects.map((project, index) => (
               <DropdownMenuItem
-                key={team.name}
-                onClick={() => setRole(team.role)}
+                key={project.id}
+                onClick={() => setActiveProjectId(project.id)}
                 className="gap-2 p-2"
               >
                 <div className="flex size-6 items-center justify-center rounded-md border">
-                  <team.logo className="size-3.5 shrink-0" />
+                  <Check
+                    className={cn(
+                      "size-3.5",
+                      project.id === activeProjectId ? "opacity-100" : "opacity-0"
+                    )}
+                  />
                 </div>
-                {team.name}
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <span className="truncate">{project.name}</span>
+                  <span className="truncate text-xs capitalize text-muted-foreground">
+                    {project.status}
+                  </span>
+                </div>
                 <DropdownMenuShortcut>⌘{index + 1}</DropdownMenuShortcut>
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="gap-2 p-2" disabled>
-              <div className="flex size-6 items-center justify-center rounded-md border bg-transparent">
-                <GalleryVerticalEnd className="size-4" />
-              </div>
-              <div className="font-medium text-muted-foreground">FlowPay demo</div>
+            <DropdownMenuItem asChild className="gap-2 p-2">
+              <Link href={ROUTES.projectNew}>
+                <div className="flex size-6 items-center justify-center rounded-md border">
+                  <Plus className="size-4" />
+                </div>
+                <div className="font-medium">New project</div>
+              </Link>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

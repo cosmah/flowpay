@@ -1,12 +1,14 @@
 [
   {
     "id": "camp_summer_launch",
+    "projectId": "proj_growth",
     "brief": {
       "title": "Summer Launch 2026",
       "objective": "Drive pre-orders for the new Relworx studio plan",
       "audience": "Marketing managers at mid-size brands",
+      "productService": "Relworx Studio Plan",
       "tone": "Confident, clear, lightly playful",
-      "keyMessage": "Ship campaign content from brief to library in one flow",
+      "customerAction": "Start a free trial or book a demo",
       "channels": ["email", "linkedin", "instagram"],
       "deadline": "2026-11-15"
     },
@@ -17,12 +19,14 @@
   },
   {
     "id": "camp_black_friday",
+    "projectId": "proj_growth",
     "brief": {
       "title": "Black Friday Teaser",
       "objective": "Warm the list ahead of the holiday promo",
       "audience": "Existing Relworx customers",
+      "productService": "Relworx annual subscription",
       "tone": "Urgent but trustworthy",
-      "keyMessage": "Early access for approved library subscribers",
+      "customerAction": "Join the early-access waitlist",
       "channels": ["email", "sms"],
       "deadline": "2026-11-20"
     },
@@ -33,12 +37,14 @@
   },
   {
     "id": "camp_onboarding",
+    "projectId": "proj_lifecycle",
     "brief": {
       "title": "Onboarding Welcome Series",
       "objective": "Introduce the review workflow to new teams",
       "audience": "New workspace admins",
+      "productService": "Relworx content workspace",
       "tone": "Helpful and concise",
-      "keyMessage": "Approve once, reuse forever from the library",
+      "customerAction": "Create the first campaign brief",
       "channels": ["email"],
       "deadline": "2026-10-30"
     },

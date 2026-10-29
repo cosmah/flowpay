@@ -6,6 +6,8 @@ import type {
   CampaignStatus,
   Draft,
   LibraryItem,
+  Project,
+  ProjectStatus,
   Task,
   TestSendLog,
   UserRole,
@@ -21,11 +23,6 @@ class H2Database {
   private seededAt: string | null = null
   private connected = false
 
-  /**
-   * Pour `/data` mock rows once per browser load.
-   * Soft re-entry (SPA navigation / second provider) keeps runtime writes
-   * such as newly registered users.
-   */
   connect(force = false): H2Snapshot {
     if (this.connected && !force) {
       return this.getSnapshot()
@@ -33,6 +30,7 @@ class H2Database {
 
     const seed = cloneMockData()
     this.snapshot = {
+      projects: seed.projects,
       campaigns: seed.campaigns,
       drafts: seed.drafts,
       tasks: seed.tasks,
@@ -53,8 +51,83 @@ class H2Database {
     return structuredClone(this.snapshot)
   }
 
-  listCampaigns(): Campaign[] {
-    return structuredClone(this.snapshot.campaigns)
+  listProjects(): Project[] {
+    return structuredClone(this.snapshot.projects)
+  }
+
+  getProject(id: string): Project | undefined {
+    return structuredClone(this.snapshot.projects.find((p) => p.id === id))
+  }
+
+  createProject(input: {
+    name: string
+    description: string
+    status?: ProjectStatus
+    createdBy: string
+  }): Project {
+    const now = new Date().toISOString()
+    const project: Project = {
+      id: `proj_${crypto.randomUUID().slice(0, 8)}`,
+      name: input.name,
+      description: input.description,
+      status: input.status ?? "active",
+      createdAt: now,
+      updatedAt: now,
+      createdBy: input.createdBy,
+    }
+    this.snapshot.projects.unshift(project)
+    return structuredClone(project)
+  }
+
+  updateProject(
+    id: string,
+    input: {
+      name: string
+      description: string
+      status: ProjectStatus
+    }
+  ): Project | undefined {
+    const index = this.snapshot.projects.findIndex((p) => p.id === id)
+    if (index < 0) return undefined
+    const current = this.snapshot.projects[index]
+    const updated: Project = {
+      ...current,
+      name: input.name,
+      description: input.description,
+      status: input.status,
+      updatedAt: new Date().toISOString(),
+    }
+    this.snapshot.projects[index] = updated
+    return structuredClone(updated)
+  }
+
+  deleteProject(id: string): boolean {
+    const before = this.snapshot.projects.length
+    const campaignIds = this.snapshot.campaigns
+      .filter((c) => c.projectId === id)
+      .map((c) => c.id)
+
+    this.snapshot.projects = this.snapshot.projects.filter((p) => p.id !== id)
+    this.snapshot.campaigns = this.snapshot.campaigns.filter(
+      (c) => c.projectId !== id
+    )
+    this.snapshot.drafts = this.snapshot.drafts.filter(
+      (d) => !campaignIds.includes(d.campaignId)
+    )
+    this.snapshot.tasks = this.snapshot.tasks.filter(
+      (t) => !campaignIds.includes(t.campaignId)
+    )
+    this.snapshot.library = this.snapshot.library.filter(
+      (item) => !campaignIds.includes(item.campaignId)
+    )
+    return this.snapshot.projects.length < before
+  }
+
+  listCampaigns(projectId?: string): Campaign[] {
+    const rows = projectId
+      ? this.snapshot.campaigns.filter((c) => c.projectId === projectId)
+      : this.snapshot.campaigns
+    return structuredClone(rows)
   }
 
   getCampaign(id: string): Campaign | undefined {
@@ -123,6 +196,7 @@ class H2Database {
   }
 
   createCampaign(input: {
+    projectId: string
     brief: CampaignBrief
     status?: CampaignStatus
     createdBy: string
@@ -130,6 +204,7 @@ class H2Database {
     const now = new Date().toISOString()
     const campaign: Campaign = {
       id: `camp_${crypto.randomUUID().slice(0, 8)}`,
+      projectId: input.projectId,
       brief: structuredClone(input.brief),
       status: input.status ?? "draft",
       createdAt: now,
@@ -143,6 +218,7 @@ class H2Database {
   updateCampaign(
     id: string,
     input: {
+      projectId: string
       brief: CampaignBrief
       status: CampaignStatus
     }
@@ -153,6 +229,7 @@ class H2Database {
     const current = this.snapshot.campaigns[index]
     const updated: Campaign = {
       ...current,
+      projectId: input.projectId,
       brief: structuredClone(input.brief),
       status: input.status,
       updatedAt: new Date().toISOString(),
@@ -175,6 +252,7 @@ class H2Database {
 
 function emptySnapshot(): H2Snapshot {
   return {
+    projects: [],
     campaigns: [],
     drafts: [],
     tasks: [],

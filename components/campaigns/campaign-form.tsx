@@ -14,29 +14,35 @@ import {
   type CampaignFormValues,
 } from "@/lib/campaigns/validation"
 import { handleClientError } from "@/lib/errors"
-import type { Campaign, CampaignStatus } from "@/types"
+import type { Campaign, CampaignStatus, Project } from "@/types"
 import { cn } from "@/lib/utils"
 
 type Fields = Partial<Record<keyof CampaignFormValues | "form", string>>
 
-const emptyValues: CampaignFormValues = {
-  title: "",
-  objective: "",
-  audience: "",
-  tone: "",
-  keyMessage: "",
-  channels: [],
-  deadline: undefined,
-  status: "draft",
+function emptyValues(projectId: string): CampaignFormValues {
+  return {
+    projectId,
+    title: "",
+    objective: "",
+    audience: "",
+    productService: "",
+    tone: "",
+    customerAction: "",
+    channels: [],
+    deadline: undefined,
+    status: "draft",
+  }
 }
 
 function fromCampaign(campaign: Campaign): CampaignFormValues {
   return {
+    projectId: campaign.projectId,
     title: campaign.brief.title,
     objective: campaign.brief.objective,
     audience: campaign.brief.audience,
+    productService: campaign.brief.productService,
     tone: campaign.brief.tone,
-    keyMessage: campaign.brief.keyMessage,
+    customerAction: campaign.brief.customerAction,
     channels: campaign.brief.channels as CampaignFormValues["channels"],
     deadline: campaign.brief.deadline,
     status: campaign.status,
@@ -46,21 +52,28 @@ function fromCampaign(campaign: Campaign): CampaignFormValues {
 export function CampaignForm({
   mode,
   initial,
+  projects,
+  defaultProjectId,
   submitLabel,
   onSubmit,
   onCancel,
 }: {
   mode: "create" | "edit"
   initial?: Campaign
+  projects: Project[]
+  defaultProjectId?: string
   submitLabel: string
   onSubmit: (values: {
+    projectId: string
     brief: ReturnType<typeof toBrief>
     status: CampaignStatus
   }) => void | Promise<void>
   onCancel?: () => void
 }) {
   const [values, setValues] = useState<CampaignFormValues>(
-    initial ? fromCampaign(initial) : emptyValues
+    initial
+      ? fromCampaign(initial)
+      : emptyValues(defaultProjectId ?? projects[0]?.id ?? "")
   )
   const [fields, setFields] = useState<Fields>({})
   const [submitting, setSubmitting] = useState(false)
@@ -105,12 +118,12 @@ export function CampaignForm({
     setSubmitting(true)
     try {
       await onSubmit({
+        projectId: result.projectId,
         brief: toBrief(result),
         status: result.status,
       })
     } catch (error) {
-      const message = handleClientError(error)
-      setFields({ form: message })
+      setFields({ form: handleClientError(error) })
     } finally {
       setSubmitting(false)
     }
@@ -122,7 +135,33 @@ export function CampaignForm({
       noValidate
       className="space-y-6 rounded-2xl border border-border/70 bg-[var(--rx-paper)] p-5 sm:p-6"
     >
+      <p className="text-sm text-muted-foreground">
+        Relworx brief: objective, audience, service/product, channel, tone, and
+        desired customer action. Missing fields show a clear message.
+      </p>
+
       <div className="grid gap-5 sm:grid-cols-2">
+        <div className="space-y-2 sm:col-span-2">
+          <Label htmlFor="projectId">Project</Label>
+          <select
+            id="projectId"
+            value={values.projectId}
+            aria-invalid={Boolean(fields.projectId)}
+            className="h-10 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            onChange={(event) => update("projectId", event.target.value)}
+          >
+            <option value="">Select a project</option>
+            {projects.map((project) => (
+              <option key={project.id} value={project.id}>
+                {project.name}
+              </option>
+            ))}
+          </select>
+          {fields.projectId ? (
+            <p className="text-xs text-destructive">{fields.projectId}</p>
+          ) : null}
+        </div>
+
         <div className="space-y-2 sm:col-span-2">
           <Label htmlFor="title">Campaign title</Label>
           <Input
@@ -158,12 +197,27 @@ export function CampaignForm({
             id="audience"
             value={values.audience}
             aria-invalid={Boolean(fields.audience)}
-            placeholder="Marketing managers at mid-size brands"
+            placeholder="Who is this for?"
             className="h-10"
             onChange={(event) => update("audience", event.target.value)}
           />
           {fields.audience ? (
             <p className="text-xs text-destructive">{fields.audience}</p>
+          ) : null}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="productService">Service or product</Label>
+          <Input
+            id="productService"
+            value={values.productService}
+            aria-invalid={Boolean(fields.productService)}
+            placeholder="Relworx Studio Plan"
+            className="h-10"
+            onChange={(event) => update("productService", event.target.value)}
+          />
+          {fields.productService ? (
+            <p className="text-xs text-destructive">{fields.productService}</p>
           ) : null}
         </div>
 
@@ -182,17 +236,18 @@ export function CampaignForm({
           ) : null}
         </div>
 
-        <div className="space-y-2 sm:col-span-2">
-          <Label htmlFor="keyMessage">Key message</Label>
-          <Textarea
-            id="keyMessage"
-            value={values.keyMessage}
-            aria-invalid={Boolean(fields.keyMessage)}
-            placeholder="The single idea every asset should reinforce"
-            onChange={(event) => update("keyMessage", event.target.value)}
+        <div className="space-y-2">
+          <Label htmlFor="customerAction">Desired customer action</Label>
+          <Input
+            id="customerAction"
+            value={values.customerAction}
+            aria-invalid={Boolean(fields.customerAction)}
+            placeholder="Book a demo / Start a trial"
+            className="h-10"
+            onChange={(event) => update("customerAction", event.target.value)}
           />
-          {fields.keyMessage ? (
-            <p className="text-xs text-destructive">{fields.keyMessage}</p>
+          {fields.customerAction ? (
+            <p className="text-xs text-destructive">{fields.customerAction}</p>
           ) : null}
         </div>
 
@@ -220,7 +275,6 @@ export function CampaignForm({
           <select
             id="status"
             value={values.status}
-            aria-invalid={Boolean(fields.status)}
             className="h-10 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
             onChange={(event) =>
               update("status", event.target.value as CampaignStatus)
@@ -232,13 +286,10 @@ export function CampaignForm({
               </option>
             ))}
           </select>
-          {fields.status ? (
-            <p className="text-xs text-destructive">{fields.status}</p>
-          ) : null}
         </div>
 
         <div className="space-y-2 sm:col-span-2">
-          <Label>Channels</Label>
+          <Label>Channel</Label>
           <div className="flex flex-wrap gap-2">
             {CAMPAIGN_CHANNELS.map((channel) => {
               const active = values.channels.includes(channel)
@@ -263,7 +314,7 @@ export function CampaignForm({
             <p className="text-xs text-destructive">{fields.channels}</p>
           ) : (
             <p className="text-xs text-muted-foreground">
-              Choose where this campaign will publish.
+              Select at least one channel from the brief.
             </p>
           )}
         </div>

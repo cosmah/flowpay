@@ -14,6 +14,7 @@ export function CampaignDetail({ campaignId }: { campaignId: string }) {
   const router = useRouter()
   const { db, deleteCampaign } = useDb()
   const campaign = db.campaigns.find((c) => c.id === campaignId)
+  const project = db.projects.find((p) => p.id === campaign?.projectId)
   const drafts = db.drafts.filter((d) => d.campaignId === campaignId)
 
   if (!campaign) {
@@ -60,13 +61,13 @@ export function CampaignDetail({ campaignId }: { campaignId: string }) {
             <StatusBadge status={campaign.status} />
           </div>
           <p className="text-sm text-muted-foreground">
-            Updated {new Date(campaign.updatedAt).toLocaleString()} · Created by{" "}
-            {campaign.createdBy}
+            Project: {project?.name ?? "Unknown"} · Updated{" "}
+            {new Date(campaign.updatedAt).toLocaleString()}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button asChild variant="outline">
-            <Link href={ROUTES.campaignEdit(campaign.id)}>Edit</Link>
+            <Link href={ROUTES.campaignEdit(campaign.id)}>Edit brief</Link>
           </Button>
           <Button type="button" variant="destructive" onClick={onDelete}>
             Delete
@@ -75,7 +76,9 @@ export function CampaignDetail({ campaignId }: { campaignId: string }) {
       </div>
 
       <div className="rounded-2xl border border-border/70 bg-[var(--rx-paper)] px-5 py-5">
-        <h3 className="font-heading text-lg text-[var(--rx-ink)]">Brief</h3>
+        <h3 className="font-heading text-lg text-[var(--rx-ink)]">
+          Campaign brief
+        </h3>
         <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2">
           <div className="sm:col-span-2">
             <dt className="text-muted-foreground">Objective</dt>
@@ -86,15 +89,23 @@ export function CampaignDetail({ campaignId }: { campaignId: string }) {
             <dd className="mt-1 text-foreground">{campaign.brief.audience}</dd>
           </div>
           <div>
+            <dt className="text-muted-foreground">Service or product</dt>
+            <dd className="mt-1 text-foreground">
+              {campaign.brief.productService}
+            </dd>
+          </div>
+          <div>
             <dt className="text-muted-foreground">Tone</dt>
             <dd className="mt-1 text-foreground">{campaign.brief.tone}</dd>
           </div>
-          <div className="sm:col-span-2">
-            <dt className="text-muted-foreground">Key message</dt>
-            <dd className="mt-1 text-foreground">{campaign.brief.keyMessage}</dd>
+          <div>
+            <dt className="text-muted-foreground">Desired customer action</dt>
+            <dd className="mt-1 text-foreground">
+              {campaign.brief.customerAction}
+            </dd>
           </div>
           <div>
-            <dt className="text-muted-foreground">Channels</dt>
+            <dt className="text-muted-foreground">Channel</dt>
             <dd className="mt-1 capitalize text-foreground">
               {campaign.brief.channels.join(", ")}
             </dd>
@@ -111,11 +122,18 @@ export function CampaignDetail({ campaignId }: { campaignId: string }) {
       </div>
 
       <section>
-        <h3 className="mb-3 font-heading text-lg text-[var(--rx-ink)]">Drafts</h3>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h3 className="font-heading text-lg text-[var(--rx-ink)]">
+            Drafts & visual
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            Relworx: 2 text formats + 1 visual
+          </p>
+        </div>
         {drafts.length === 0 ? (
           <EmptyState
             title="No drafts yet"
-            description="Generate caption, email, and visual drafts from the brief."
+            description="Generate a social caption, email draft, and promotional graphic from this brief. AI or templates are allowed."
           />
         ) : (
           <ul className="divide-y divide-border/70 overflow-hidden rounded-2xl border border-border/70 bg-[var(--rx-paper)]">
@@ -127,6 +145,9 @@ export function CampaignDetail({ campaignId }: { campaignId: string }) {
                 <div className="min-w-0">
                   <p className="font-heading capitalize text-[var(--rx-ink)]">
                     {draft.format}
+                    <span className="ml-2 text-xs font-normal text-muted-foreground">
+                      via {draft.generationSource}
+                    </span>
                   </p>
                   <p className="mt-1 line-clamp-3 text-sm text-muted-foreground">
                     {draft.content}

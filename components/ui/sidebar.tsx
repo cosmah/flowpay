@@ -517,7 +517,8 @@ function SidebarMenuButton({
     />
   )
 
-  if (!tooltip) {
+  // Avoid mounting Tooltip during SSR / instant validation unless collapsed.
+  if (!tooltip || state !== "collapsed" || isMobile) {
     return button
   }
 
@@ -530,12 +531,7 @@ function SidebarMenuButton({
   return (
     <Tooltip>
       <TooltipTrigger asChild>{button}</TooltipTrigger>
-      <TooltipContent
-        side="right"
-        align="center"
-        hidden={state !== "collapsed" || isMobile}
-        {...tooltip}
-      />
+      <TooltipContent side="right" align="center" {...tooltip} />
     </Tooltip>
   )
 }
