@@ -1,7 +1,9 @@
 "use client"
 
+import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
 import { useSearchParams } from "next/navigation"
+import { Kanban, LayoutList } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -21,6 +23,7 @@ import { AddTaskForm } from "@/components/tasks/add-task-form"
 import { useDb } from "@/hooks/use-db"
 import { useTasks } from "@/hooks/use-tasks"
 import { useTeam } from "@/hooks/use-team"
+import { ROUTES } from "@/lib/constants/routes"
 import type { TaskStatus } from "@/types"
 
 type SortKey =
@@ -100,7 +103,19 @@ export function TaskList() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="inline-flex rounded-lg border border-border/70 bg-[var(--rx-paper)] p-1">
+          <Button size="sm" variant="secondary" className="gap-1.5" disabled>
+            <LayoutList />
+            List
+          </Button>
+          <Button asChild size="sm" variant="ghost" className="gap-1.5">
+            <Link href={ROUTES.taskBoard}>
+              <Kanban />
+              Board
+            </Link>
+          </Button>
+        </div>
         <Button type="button" onClick={() => setOpen(true)}>
           Add new
         </Button>

@@ -99,7 +99,7 @@ export function NavUser() {
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
-                <Link href={ROUTES.dashboard}>
+                <Link href={ROUTES.account}>
                   <BadgeCheck />
                   Account
                 </Link>

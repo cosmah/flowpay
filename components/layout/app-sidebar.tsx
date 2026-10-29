@@ -61,6 +61,10 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       title: "Tasks",
       url: ROUTES.tasks,
       icon: ListChecks,
+      items: [
+        { title: "List", url: ROUTES.tasks },
+        { title: "Board", url: ROUTES.taskBoard },
+      ],
     },
     ...(isReviewer
       ? [

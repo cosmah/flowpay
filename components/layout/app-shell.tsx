@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/layout/app-sidebar"
 import { ProjectSwitcher } from "@/components/layout/project-switcher"
-import { RoleSwitcher } from "@/components/layout/role-switcher"
+import { UserMenu } from "@/components/layout/user-menu"
 import { ErrorBoundary } from "@/components/shared"
 import { DbProvider } from "@/context/db-context"
 import { LibraryProvider } from "@/context/library-context"
@@ -17,21 +17,6 @@ import { ProjectProvider } from "@/context/project-context"
 import { RoleProvider } from "@/context/role-context"
 import { TaskProvider } from "@/context/task-context"
 import { TeamProvider } from "@/context/team-context"
-import { useDb } from "@/hooks/use-db"
-
-function SeedIndicator() {
-  const { seededAt } = useDb()
-  if (!seededAt) return null
-
-  return (
-    <span
-      className="hidden text-xs text-muted-foreground lg:inline"
-      suppressHydrationWarning
-    >
-      H2 ready
-    </span>
-  )
-}
 
 export function AppShell({ children }: { children: ReactNode }) {
   return (
@@ -48,9 +33,8 @@ export function AppShell({ children }: { children: ReactNode }) {
                       <SidebarTrigger className="-ml-1" />
                       <Separator orientation="vertical" className="mr-2 h-4" />
                       <ProjectSwitcher />
-                      <div className="ml-auto flex items-center gap-3">
-                        <SeedIndicator />
-                        <RoleSwitcher />
+                      <div className="ml-auto flex items-center">
+                        <UserMenu />
                       </div>
                     </header>
                     <main className="flex flex-1 flex-col gap-4 px-4 py-6 sm:px-6 md:px-8">
