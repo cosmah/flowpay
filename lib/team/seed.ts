@@ -1,28 +1,34 @@
 import type { TeamMember } from "@/types"
 
-/** First-load demo seed: 2 marketers + 1 reviewer. */
+/** First-load seed aligned with login accounts + one extra invitee. */
 export function createSeedMembers(): TeamMember[] {
   return [
     {
+      id: "member_amina_okello",
+      name: "Amina Okello",
+      email: "marketer@flowpay.dev",
+      role: "marketer",
+      initials: "AO",
+      status: "active",
+    },
+    {
+      id: "member_jordan_mensah",
+      name: "Jordan Mensah",
+      email: "reviewer@flowpay.dev",
+      role: "reviewer",
+      initials: "JM",
+      status: "active",
+    },
+    {
       id: "member_maya",
       name: "Maya Okonkwo",
+      email: "maya@flowpay.dev",
       role: "marketer",
       initials: "MO",
-    },
-    {
-      id: "member_jordan",
-      name: "Jordan Blake",
-      role: "marketer",
-      initials: "JB",
-    },
-    {
-      id: "member_amina",
-      name: "Amina Hassan",
-      role: "reviewer",
-      initials: "AH",
+      status: "active",
     },
   ]
 }
 
-export const DEFAULT_MARKETER_ID = "member_maya"
-export const DEFAULT_REVIEWER_ID = "member_amina"
+export const DEFAULT_MARKETER_ID = "member_amina_okello"
+export const DEFAULT_REVIEWER_ID = "member_jordan_mensah"

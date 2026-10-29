@@ -22,8 +22,8 @@ import { createSeedTasks } from "@/lib/tasks/seed"
 import type { Draft, Task, TaskWithMeta } from "@/types"
 import { withTaskMeta } from "@/types"
 
-const STORAGE_KEY = "flowpay.tasks.v2"
-const SEEDED_KEY = "flowpay.tasks.seeded.v2"
+const STORAGE_KEY = "flowpay.tasks.v3"
+const SEEDED_KEY = "flowpay.tasks.seeded.v3"
 
 type NewTaskInput = Omit<Task, "id" | "createdAt"> & {
   id?: string

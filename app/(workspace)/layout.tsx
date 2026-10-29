@@ -1,3 +1,4 @@
+import { RequireAuth } from "@/components/auth/require-auth"
 import { AppShell } from "@/components/layout/app-shell"
 
 export default function WorkspaceLayout({
@@ -5,5 +6,9 @@ export default function WorkspaceLayout({
 }: {
   children: React.ReactNode
 }) {
-  return <AppShell>{children}</AppShell>
+  return (
+    <RequireAuth>
+      <AppShell>{children}</AppShell>
+    </RequireAuth>
+  )
 }

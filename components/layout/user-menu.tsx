@@ -1,31 +1,25 @@
 "use client"
 
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
 import { useTeam } from "@/hooks/use-team"
 import { ROUTES } from "@/lib/constants/routes"
 import { cn } from "@/lib/utils"
 
-/** Compact topbar avatar — opens the account / user details screen. */
+/** Standout topbar avatar — opens the signed-in account screen. */
 export function UserMenu({ className }: { className?: string }) {
   const { currentUser } = useTeam()
 
   return (
-    <Button
-      asChild
-      variant="outline"
-      size="icon"
+    <Link
+      href={ROUTES.account}
+      title={currentUser.name}
+      aria-label={`Open account for ${currentUser.name}`}
       className={cn(
-        "size-9 rounded-full border-border/70 bg-[var(--rx-mist)] text-[var(--rx-ink)] hover:bg-[var(--rx-mist)]/80",
+        "flex size-11 shrink-0 items-center justify-center rounded-full bg-[var(--rx-ink)] text-sm font-semibold tracking-wide text-[var(--rx-paper)] shadow-lg ring-2 ring-[var(--rx-lagoon)] ring-offset-2 ring-offset-background transition hover:scale-105 hover:bg-[var(--rx-ink)]/90",
         className
       )}
-      aria-label={`Open profile for ${currentUser.name}`}
     >
-      <Link href={ROUTES.account} title={currentUser.name}>
-        <span className="text-[11px] font-semibold tracking-wide">
-          {currentUser.initials}
-        </span>
-      </Link>
-    </Button>
+      {currentUser.initials}
+    </Link>
   )
 }

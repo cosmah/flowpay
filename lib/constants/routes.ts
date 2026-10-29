@@ -24,6 +24,8 @@ export const ROUTES = {
   libraryItem: (id: string) => `/library/${id}` as const,
   team: "/team",
   account: "/account",
+  notifications: "/notifications",
+  notification: (id: string) => `/notifications/${id}` as const,
 } as const
 
 export const MARKETING_NAV = [
@@ -46,6 +48,7 @@ export const WORKSPACE_NAV: {
   { href: ROUTES.review, label: "Review", roles: ["reviewer"] },
   { href: ROUTES.library, label: "Library", roles: ["marketer", "reviewer"] },
   { href: ROUTES.team, label: "Team", roles: ["marketer", "reviewer"] },
+  { href: ROUTES.notifications, label: "Notifications", roles: ["marketer", "reviewer"] },
   { href: ROUTES.account, label: "Account", roles: ["marketer", "reviewer"] },
 ]
 

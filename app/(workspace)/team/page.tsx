@@ -6,7 +6,7 @@ export default function TeamPage() {
     <div>
       <PageHeader
         title="Team"
-        description="Switch users from the header. Open and overdue task counts come from the Tasks store."
+        description="Invite marketers and reviewers. Disable or delete members without affecting the signed-in account."
       />
       <TeamList />
     </div>

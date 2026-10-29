@@ -1,5 +1,6 @@
 export * from "./roles"
 export * from "./team"
+export * from "./notification"
 export * from "./project"
 export * from "./campaign"
 export * from "./draft"

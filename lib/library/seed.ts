@@ -6,7 +6,8 @@ import type { LibraryItem } from "@/types"
 export function createSeedLibraryItems(now = new Date()): LibraryItem[] {
   const approvedAt = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString()
   const graphicTitle = "Onboarding Welcome Series — Graphic"
-  const reviewer = createSeedMembers().find((m) => m.role === "reviewer")!
+  const reviewer =
+    createSeedMembers().find((m) => m.role === "reviewer" && m.status === "active")!
 
   return [
     {

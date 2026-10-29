@@ -108,9 +108,11 @@ export function NavUser() {
                 <CreditCard />
                 Billing
               </DropdownMenuItem>
-              <DropdownMenuItem disabled>
-                <Bell />
-                Notifications
+              <DropdownMenuItem asChild>
+                <Link href={ROUTES.notifications}>
+                  <Bell />
+                  Notifications
+                </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

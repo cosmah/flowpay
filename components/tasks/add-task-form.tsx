@@ -127,11 +127,13 @@ export function AddTaskForm({
             className="h-10 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
           >
             <option value="">Select owner</option>
-            {members.map((member) => (
-              <option key={member.id} value={member.name}>
-                {member.name} ({member.role})
-              </option>
-            ))}
+            {members
+              .filter((member) => member.status === "active")
+              .map((member) => (
+                <option key={member.id} value={member.name}>
+                  {member.name} ({member.role})
+                </option>
+              ))}
           </select>
         </div>
 

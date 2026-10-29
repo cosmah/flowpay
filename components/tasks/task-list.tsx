@@ -60,7 +60,13 @@ export function TaskList() {
     return map
   }, [db.campaigns])
 
-  const owners = useMemo(() => members.map((member) => member.name), [members])
+  const owners = useMemo(
+    () =>
+      members
+        .filter((member) => member.status === "active")
+        .map((member) => member.name),
+    [members]
+  )
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase()

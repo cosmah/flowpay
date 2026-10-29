@@ -13,8 +13,8 @@ import {
 import { createSeedLibraryItems } from "@/lib/library/seed"
 import type { LibraryItem } from "@/types"
 
-const STORAGE_KEY = "flowpay.library.v2"
-const SEEDED_KEY = "flowpay.library.seeded.v2"
+const STORAGE_KEY = "flowpay.library.v3"
+const SEEDED_KEY = "flowpay.library.seeded.v3"
 
 type NewLibraryItemInput = Omit<LibraryItem, "id"> & { id?: string }
 
