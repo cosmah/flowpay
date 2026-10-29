@@ -18,7 +18,7 @@ export function ProjectEditForm({ projectId }: { projectId: string }) {
     return (
       <EmptyState
         title="Project not found"
-        description="This project is not in the current session."
+        description="This project is not available."
         action={
           <Button asChild variant="outline">
             <Link href={ROUTES.projects}>Back to projects</Link>
@@ -34,8 +34,8 @@ export function ProjectEditForm({ projectId }: { projectId: string }) {
       initial={project}
       submitLabel="Save changes"
       onCancel={() => router.push(ROUTES.project(project.id))}
-      onSubmit={(values) => {
-        const updated = updateProject(project.id, values)
+      onSubmit={async (values) => {
+        const updated = await updateProject(project.id, values)
         if (!updated) {
           toast.error("Could not update this project.")
           return

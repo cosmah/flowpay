@@ -21,7 +21,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
     return (
       <EmptyState
         title="Project not found"
-        description="This project is missing from the current H2 snapshot."
+        description="This project is not available."
         action={
           <Button asChild variant="outline">
             <Link href={ROUTES.projects}>Back to projects</Link>
@@ -31,13 +31,13 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
     )
   }
 
-  function onDelete() {
+  async function onDelete() {
     const confirmed = window.confirm(
       `Delete “${project!.name}” and its ${campaigns.length} campaign(s)?`
     )
     if (!confirmed) return
     try {
-      const ok = deleteProject(project!.id)
+      const ok = await deleteProject(project!.id)
       if (!ok) {
         toast.error("Could not delete this project.")
         return

@@ -30,7 +30,7 @@ const requiredText = (label: string, min = 3, max = 200) =>
 
 /** Matches Relworx brief: objective, audience, product/service, channel, tone, customer action. */
 export const campaignBriefSchema = z.object({
-  projectId: z.string().trim().optional().default(""),
+  projectId: z.string().trim().min(1, "Select a project"),
   title: requiredText("Title", 3, 80),
   objective: requiredText("Objective", 10, 280),
   audience: requiredText("Audience", 3, 120),

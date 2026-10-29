@@ -84,7 +84,10 @@ export function CampaignDetail({ campaignId }: { campaignId: string }) {
             <StatusBadge status={campaign.status} />
           </div>
           <p className="text-sm text-muted-foreground">
-            Owner: {campaign.createdBy} · Updated{" "}
+            Project:{" "}
+            {db.projects.find((p) => p.id === campaign.projectId)?.name ??
+              "Unassigned"}{" "}
+            · Owner: {campaign.createdBy} · Updated{" "}
             {new Date(campaign.updatedAt).toLocaleString()}
           </p>
         </div>

@@ -36,7 +36,7 @@ type SortKey =
 
 export function ProjectList() {
   const { user } = useAuth()
-  const { isMarketer } = useRole()
+  const { canMarket: isMarketer } = useRole()
   const { db, createProject } = useDb()
   const { activeProjectId, setActiveProjectId } = useProject()
   const [open, setOpen] = useState(false)
@@ -233,12 +233,16 @@ export function ProjectList() {
             submitLabel="Create project"
             compact
             onCancel={() => setOpen(false)}
-            onSubmit={(values) => {
-              const project = createProject({
+            onSubmit={async (values) => {
+              const result = await createProject({
                 ...values,
-                createdBy: user?.role ?? "marketer",
+                createdBy: user?.email ?? user?.name ?? "admin",
               })
-              setActiveProjectId(project.id)
+              if ("error" in result) {
+                toast.error(result.error)
+                return
+              }
+              setActiveProjectId(result.id)
               toast.success("Project created and selected.")
               setOpen(false)
             }}

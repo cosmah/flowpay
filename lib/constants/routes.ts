@@ -41,6 +41,7 @@ export const WORKSPACE_NAV: {
   roles: UserRole[]
 }[] = [
   { href: ROUTES.dashboard, label: "Dashboard", roles: ["admin", "marketer", "reviewer"] },
+  { href: ROUTES.projects, label: "Projects", roles: ["admin", "marketer", "reviewer"] },
   { href: ROUTES.campaigns, label: "Campaigns", roles: ["admin", "marketer", "reviewer"] },
   { href: ROUTES.tasks, label: "Tasks", roles: ["admin", "marketer", "reviewer"] },
   { href: ROUTES.taskBoard, label: "Task board", roles: ["admin", "marketer", "reviewer"] },

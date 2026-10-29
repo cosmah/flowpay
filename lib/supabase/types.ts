@@ -49,6 +49,39 @@ export type Database = {
         }
         Relationships: []
       }
+      projects: {
+        Row: {
+          id: string
+          company_id: string
+          name: string
+          description: string
+          status: "active" | "paused" | "archived"
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          name: string
+          description?: string
+          status?: "active" | "paused" | "archived"
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          name?: string
+          description?: string
+          status?: "active" | "paused" | "archived"
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           id: string
@@ -132,6 +165,7 @@ export type Database = {
           owner_email: string | null
           reviewer_email: string | null
           company_id: string | null
+          project_id: string | null
           created_at: string
           updated_at: string
         }
@@ -148,6 +182,7 @@ export type Database = {
           owner_email?: string | null
           reviewer_email?: string | null
           company_id?: string | null
+          project_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -164,6 +199,7 @@ export type Database = {
           owner_email?: string | null
           reviewer_email?: string | null
           company_id?: string | null
+          project_id?: string | null
           created_at?: string
           updated_at?: string
         }

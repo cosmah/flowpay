@@ -16,6 +16,7 @@ import {
   defaultContentBodies,
   draftFromContentItem,
   libraryFromRow,
+  projectFromRow,
   taskFromRow,
   taskStatusToRow,
   testSendFromRow,
@@ -50,12 +51,12 @@ interface DbContextValue {
     description: string
     status?: Project["status"]
     createdBy: string
-  }) => Project
+  }) => Promise<Project | { error: string }>
   updateProject: (
     id: string,
     input: { name: string; description: string; status: Project["status"] }
-  ) => Project | undefined
-  deleteProject: (id: string) => boolean
+  ) => Promise<Project | undefined>
+  deleteProject: (id: string) => Promise<boolean>
   createCampaign: (input: {
     projectId: string
     brief: CampaignBrief
@@ -110,12 +111,14 @@ export function DbProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     const supabase = createClient()
     const [
+      projectsRes,
       campaignsRes,
       contentRes,
       tasksRes,
       libraryRes,
       sendsRes,
     ] = await Promise.all([
+      supabase.from("projects").select("*").order("updated_at", { ascending: false }),
       supabase.from("campaigns").select("*").order("updated_at", { ascending: false }),
       supabase.from("content_items").select("*").order("updated_at", { ascending: false }),
       supabase.from("tasks").select("*").order("created_at", { ascending: false }),
@@ -129,7 +132,7 @@ export function DbProvider({ children }: { children: ReactNode }) {
     )
 
     setDb({
-      projects: [],
+      projects: (projectsRes.data ?? []).map(projectFromRow),
       campaigns: campaignRows.map(campaignFromRow),
       drafts: (contentRes.data ?? []).map(draftFromContentItem),
       tasks: (tasksRes.data ?? []).map(taskFromRow),
@@ -147,28 +150,83 @@ export function DbProvider({ children }: { children: ReactNode }) {
   }, [refresh])
 
   const createProject = useCallback(
-    (input: {
+    async (input: {
       name: string
       description: string
       status?: Project["status"]
       createdBy: string
-    }): Project => {
-      const now = new Date().toISOString()
-      return {
-        id: `local_${crypto.randomUUID().slice(0, 8)}`,
-        name: input.name,
-        description: input.description,
-        status: input.status ?? "active",
-        createdAt: now,
-        updatedAt: now,
-        createdBy: input.createdBy,
+    }) => {
+      const supabase = createClient()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      const { data: profile } = user
+        ? await supabase
+            .from("profiles")
+            .select("company_id")
+            .eq("id", user.id)
+            .maybeSingle()
+        : { data: null }
+
+      if (!profile?.company_id) {
+        return { error: "Join or create a company before adding projects." }
       }
+
+      const { data, error } = await supabase
+        .from("projects")
+        .insert({
+          company_id: profile.company_id,
+          name: input.name,
+          description: input.description,
+          status: input.status ?? "active",
+          created_by: input.createdBy,
+        })
+        .select("*")
+        .single()
+
+      if (error || !data) {
+        return { error: error?.message ?? "Could not create project." }
+      }
+      await refresh()
+      return projectFromRow(data)
     },
-    []
+    [refresh]
   )
 
-  const updateProject = useCallback(() => undefined, [])
-  const deleteProject = useCallback(() => false, [])
+  const updateProject = useCallback(
+    async (
+      id: string,
+      input: { name: string; description: string; status: Project["status"] }
+    ) => {
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from("projects")
+        .update({
+          name: input.name,
+          description: input.description,
+          status: input.status,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", id)
+        .select("*")
+        .single()
+      if (error || !data) return undefined
+      await refresh()
+      return projectFromRow(data)
+    },
+    [refresh]
+  )
+
+  const deleteProject = useCallback(
+    async (id: string) => {
+      const supabase = createClient()
+      const { error } = await supabase.from("projects").delete().eq("id", id)
+      if (error) return false
+      await refresh()
+      return true
+    },
+    [refresh]
+  )
 
   const createCampaign = useCallback(
     async (input: {
@@ -178,6 +236,10 @@ export function DbProvider({ children }: { children: ReactNode }) {
       createdBy: string
       reviewerEmail?: string
     }) => {
+      if (!input.projectId) {
+        return { error: "Select a project for this campaign." }
+      }
+
       const supabase = createClient()
       const {
         data: { user },
@@ -203,6 +265,7 @@ export function DbProvider({ children }: { children: ReactNode }) {
           : undefined,
         reviewer_email: input.reviewerEmail ?? null,
         company_id: companyId,
+        project_id: input.projectId,
       }
 
       const { data: campaign, error } = await supabase
@@ -277,6 +340,7 @@ export function DbProvider({ children }: { children: ReactNode }) {
         .update({
           ...campaignBriefToRow(input.brief),
           status,
+          project_id: input.projectId || null,
           updated_at: new Date().toISOString(),
         })
         .eq("id", id)

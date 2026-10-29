@@ -6,12 +6,25 @@ import type {
   DraftFormat,
   LibraryItem,
   LibraryItemType,
+  Project,
   Task,
   TaskStatus,
   TaskType,
   TestSendLog,
 } from "@/types"
 import type { Tables } from "./types"
+
+export function projectFromRow(row: Tables<"projects">): Project {
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    status: row.status,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    createdBy: row.created_by ?? "unknown",
+  }
+}
 
 export function channelsFromDb(channel: string): string[] {
   return channel
@@ -40,7 +53,7 @@ export function campaignFromRow(row: Tables<"campaigns">): Campaign {
 
   return {
     id: row.id,
-    projectId: "",
+    projectId: row.project_id ?? "",
     brief,
     status,
     createdAt: row.created_at,

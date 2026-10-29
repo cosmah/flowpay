@@ -19,14 +19,18 @@ export function ProjectCreateForm() {
       mode="create"
       submitLabel="Create project"
       onCancel={() => router.push(ROUTES.projects)}
-      onSubmit={(values) => {
-        const project = createProject({
+      onSubmit={async (values) => {
+        const result = await createProject({
           ...values,
-          createdBy: user?.role ?? "marketer",
+          createdBy: user?.email ?? user?.name ?? "admin",
         })
-        setActiveProjectId(project.id)
+        if ("error" in result) {
+          toast.error(result.error)
+          return
+        }
+        setActiveProjectId(result.id)
         toast.success("Project created and selected.")
-        router.push(ROUTES.project(project.id))
+        router.push(ROUTES.project(result.id))
       }}
     />
   )
