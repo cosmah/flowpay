@@ -4,12 +4,10 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
-  useState,
   type ReactNode,
 } from "react"
-import { useAuth } from "@/hooks/use-auth"
+import { useTeam } from "@/context/team-context"
 import type { UserRole } from "@/types"
 
 interface RoleContextValue {
@@ -21,28 +19,27 @@ interface RoleContextValue {
 
 const RoleContext = createContext<RoleContextValue | null>(null)
 
+/** Role mirrors the active team member; switching role picks the first member with that role. */
 export function RoleProvider({ children }: { children: ReactNode }) {
-  const { user, isReady } = useAuth()
-  const [role, setRoleState] = useState<UserRole>("marketer")
+  const { members, currentUser, setCurrentUser } = useTeam()
 
-  useEffect(() => {
-    if (isReady && user?.role) {
-      setRoleState(user.role)
-    }
-  }, [isReady, user?.role])
-
-  const setRole = useCallback((next: UserRole) => {
-    setRoleState(next)
-  }, [])
+  const setRole = useCallback(
+    (next: UserRole) => {
+      if (currentUser.role === next) return
+      const match = members.find((member) => member.role === next)
+      if (match) setCurrentUser(match.id)
+    },
+    [members, currentUser.role, setCurrentUser]
+  )
 
   const value = useMemo(
     () => ({
-      role,
+      role: currentUser.role,
       setRole,
-      isMarketer: role === "marketer",
-      isReviewer: role === "reviewer",
+      isMarketer: currentUser.role === "marketer",
+      isReviewer: currentUser.role === "reviewer",
     }),
-    [role, setRole]
+    [currentUser.role, setRole]
   )
 
   return <RoleContext.Provider value={value}>{children}</RoleContext.Provider>

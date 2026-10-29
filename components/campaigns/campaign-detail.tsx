@@ -10,13 +10,15 @@ import { StatusBadge } from "@/components/shared/status-badge"
 import { useDb } from "@/hooks/use-db"
 import { useRole } from "@/hooks/use-role"
 import { useTasks } from "@/hooks/use-tasks"
+import { useTeam } from "@/hooks/use-team"
 import { ROUTES } from "@/lib/constants/routes"
 import { handleClientError } from "@/lib/errors"
 import type { Draft } from "@/types"
 
 export function CampaignDetail({ campaignId }: { campaignId: string }) {
   const router = useRouter()
-  const { role } = useRole()
+  const { isMarketer } = useRole()
+  const { currentUser, getReviewer } = useTeam()
   const { db, deleteCampaign, submitDraft } = useDb()
   const { handleDraftSubmitted } = useTasks()
   const campaign = db.campaigns.find((c) => c.id === campaignId)
@@ -58,12 +60,14 @@ export function CampaignDetail({ campaignId }: { campaignId: string }) {
 
   function onSubmitDraft(draft: Draft) {
     try {
-      const updated = submitDraft(draft.id)
+      const updated = submitDraft(draft.id, currentUser.name)
       if (!updated) {
         toast.error("This draft cannot be submitted.")
         return
       }
-      handleDraftSubmitted(updated)
+      handleDraftSubmitted(updated, {
+        reviewerName: getReviewer().name,
+      })
       toast.success("Draft submitted for review.")
     } catch (error) {
       handleClientError(error)
@@ -86,12 +90,16 @@ export function CampaignDetail({ campaignId }: { campaignId: string }) {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button asChild variant="outline">
-            <Link href={ROUTES.campaignEdit(campaign.id)}>Edit brief</Link>
-          </Button>
-          <Button type="button" variant="destructive" onClick={onDelete}>
-            Delete
-          </Button>
+          {isMarketer ? (
+            <Button asChild variant="outline">
+              <Link href={ROUTES.campaignEdit(campaign.id)}>Edit brief</Link>
+            </Button>
+          ) : null}
+          {isMarketer ? (
+            <Button type="button" variant="destructive" onClick={onDelete}>
+              Delete
+            </Button>
+          ) : null}
         </div>
       </div>
 
@@ -159,7 +167,7 @@ export function CampaignDetail({ campaignId }: { campaignId: string }) {
           <ul className="divide-y divide-border/70 overflow-hidden rounded-2xl border border-border/70 bg-[var(--rx-paper)]">
             {drafts.map((draft) => {
               const canSubmit =
-                role === "marketer" &&
+                isMarketer &&
                 (draft.status === "draft" ||
                   draft.status === "changes_requested")
 
@@ -187,7 +195,7 @@ export function CampaignDetail({ campaignId }: { campaignId: string }) {
                         size="sm"
                         onClick={() => onSubmitDraft(draft)}
                       >
-                        Submit
+                        Submit for review
                       </Button>
                     ) : null}
                   </div>

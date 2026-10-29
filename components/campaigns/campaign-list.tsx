@@ -21,6 +21,7 @@ import { StatusBadge } from "@/components/shared/status-badge"
 import { useAuth } from "@/hooks/use-auth"
 import { useDb } from "@/hooks/use-db"
 import { useProject } from "@/hooks/use-project"
+import { useRole } from "@/hooks/use-role"
 import { CAMPAIGN_STATUSES } from "@/lib/campaigns/validation"
 import { ROUTES } from "@/lib/constants/routes"
 import type { CampaignStatus } from "@/types"
@@ -31,6 +32,7 @@ type StatusFilter = "all" | CampaignStatus
 
 export function CampaignList() {
   const { user } = useAuth()
+  const { isMarketer } = useRole()
   const { db, createCampaign } = useDb()
   const { projects, activeProject, activeProjectId } = useProject()
   const [open, setOpen] = useState(false)
@@ -116,13 +118,15 @@ export function CampaignList() {
           </span>
           . Switch projects from the top bar.
         </p>
-        <Button
-          type="button"
-          onClick={() => setOpen(true)}
-          disabled={projects.length === 0}
-        >
-          Add new
-        </Button>
+        {isMarketer ? (
+          <Button
+            type="button"
+            onClick={() => setOpen(true)}
+            disabled={projects.length === 0}
+          >
+            Add new
+          </Button>
+        ) : null}
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
@@ -210,11 +214,11 @@ export function CampaignList() {
               <Button asChild variant="outline">
                 <Link href={ROUTES.projects}>Go to projects</Link>
               </Button>
-            ) : (
+            ) : isMarketer ? (
               <Button type="button" variant="outline" onClick={() => setOpen(true)}>
                 Add new
               </Button>
-            )
+            ) : undefined
           }
         />
       ) : (

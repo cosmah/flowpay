@@ -20,6 +20,7 @@ import { ProjectForm } from "@/components/projects/project-form"
 import { useAuth } from "@/hooks/use-auth"
 import { useDb } from "@/hooks/use-db"
 import { useProject } from "@/hooks/use-project"
+import { useRole } from "@/hooks/use-role"
 import { PROJECT_STATUSES } from "@/lib/projects/validation"
 import { ROUTES } from "@/lib/constants/routes"
 import type { ProjectStatus } from "@/types"
@@ -35,6 +36,7 @@ type SortKey =
 
 export function ProjectList() {
   const { user } = useAuth()
+  const { isMarketer } = useRole()
   const { db, createProject } = useDb()
   const { activeProjectId, setActiveProjectId } = useProject()
   const [open, setOpen] = useState(false)
@@ -90,11 +92,13 @@ export function ProjectList() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end">
-        <Button type="button" onClick={() => setOpen(true)}>
-          Add new
-        </Button>
-      </div>
+      {isMarketer ? (
+        <div className="flex justify-end">
+          <Button type="button" onClick={() => setOpen(true)}>
+            Add new
+          </Button>
+        </div>
+      ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {stats.map((stat) => (
@@ -158,9 +162,11 @@ export function ProjectList() {
           title="No projects match"
           description="Create a project to group Relworx campaigns, or clear search and filters."
           action={
-            <Button type="button" variant="outline" onClick={() => setOpen(true)}>
-              Add new
-            </Button>
+            isMarketer ? (
+              <Button type="button" variant="outline" onClick={() => setOpen(true)}>
+                Add new
+              </Button>
+            ) : undefined
           }
         />
       ) : (

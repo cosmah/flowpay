@@ -16,6 +16,7 @@ import { LibraryProvider } from "@/context/library-context"
 import { ProjectProvider } from "@/context/project-context"
 import { RoleProvider } from "@/context/role-context"
 import { TaskProvider } from "@/context/task-context"
+import { TeamProvider } from "@/context/team-context"
 import { useDb } from "@/hooks/use-db"
 
 function SeedIndicator() {
@@ -35,36 +36,35 @@ function SeedIndicator() {
 export function AppShell({ children }: { children: ReactNode }) {
   return (
     <DbProvider>
-      <RoleProvider>
-        <ProjectProvider>
-          <TaskProvider>
-            <LibraryProvider>
-              <SidebarProvider>
-                <AppSidebar />
-                <SidebarInset>
-                  <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border/70 px-4">
-                    <SidebarTrigger className="-ml-1" />
-                    <Separator orientation="vertical" className="mr-2 h-4" />
-                    <ProjectSwitcher />
-                    <div className="ml-auto flex items-center gap-3">
-                      <SeedIndicator />
-                      <span className="hidden text-xs text-muted-foreground sm:inline">
-                        Demo role
-                      </span>
-                      <RoleSwitcher />
-                    </div>
-                  </header>
-                  <main className="flex flex-1 flex-col gap-4 px-4 py-6 sm:px-6 md:px-8">
-                    <ErrorBoundary title="This view failed to load">
-                      {children}
-                    </ErrorBoundary>
-                  </main>
-                </SidebarInset>
-              </SidebarProvider>
-            </LibraryProvider>
-          </TaskProvider>
-        </ProjectProvider>
-      </RoleProvider>
+      <TeamProvider>
+        <RoleProvider>
+          <ProjectProvider>
+            <TaskProvider>
+              <LibraryProvider>
+                <SidebarProvider>
+                  <AppSidebar />
+                  <SidebarInset>
+                    <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border/70 px-4">
+                      <SidebarTrigger className="-ml-1" />
+                      <Separator orientation="vertical" className="mr-2 h-4" />
+                      <ProjectSwitcher />
+                      <div className="ml-auto flex items-center gap-3">
+                        <SeedIndicator />
+                        <RoleSwitcher />
+                      </div>
+                    </header>
+                    <main className="flex flex-1 flex-col gap-4 px-4 py-6 sm:px-6 md:px-8">
+                      <ErrorBoundary title="This view failed to load">
+                        {children}
+                      </ErrorBoundary>
+                    </main>
+                  </SidebarInset>
+                </SidebarProvider>
+              </LibraryProvider>
+            </TaskProvider>
+          </ProjectProvider>
+        </RoleProvider>
+      </TeamProvider>
     </DbProvider>
   )
 }

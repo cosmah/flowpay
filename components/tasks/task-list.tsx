@@ -1,6 +1,7 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
+import { useSearchParams } from "next/navigation"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -19,6 +20,7 @@ import { StatusBadge } from "@/components/shared/status-badge"
 import { AddTaskForm } from "@/components/tasks/add-task-form"
 import { useDb } from "@/hooks/use-db"
 import { useTasks } from "@/hooks/use-tasks"
+import { useTeam } from "@/hooks/use-team"
 import type { TaskStatus } from "@/types"
 
 type SortKey =
@@ -30,13 +32,22 @@ type SortKey =
   | "owner"
 
 export function TaskList() {
+  const searchParams = useSearchParams()
+  const ownerFromUrl = searchParams.get("owner")
   const { db } = useDb()
   const { tasks, updateTask } = useTasks()
+  const { members } = useTeam()
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState("")
   const [ownerFilter, setOwnerFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState<"all" | TaskStatus>("all")
   const [sort, setSort] = useState<SortKey>("due_asc")
+
+  useEffect(() => {
+    if (!ownerFromUrl) return
+    const match = members.find((member) => member.name === ownerFromUrl)
+    setOwnerFilter(match?.name ?? ownerFromUrl)
+  }, [ownerFromUrl, members])
 
   const campaignTitles = useMemo(() => {
     const map = new Map<string, string>()
@@ -46,10 +57,7 @@ export function TaskList() {
     return map
   }, [db.campaigns])
 
-  const owners = useMemo(() => {
-    const set = new Set(tasks.map((task) => task.owner))
-    return Array.from(set).sort()
-  }, [tasks])
+  const owners = useMemo(() => members.map((member) => member.name), [members])
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase()

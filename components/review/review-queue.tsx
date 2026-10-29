@@ -3,25 +3,27 @@
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { EmptyState } from "@/components/shared/empty-state"
 import {
   ListToolbar,
   listControlClassName,
 } from "@/components/shared/list-toolbar"
 import { StatusBadge } from "@/components/shared/status-badge"
-import { useAuth } from "@/hooks/use-auth"
 import { useDb } from "@/hooks/use-db"
 import { useLibrary } from "@/hooks/use-library"
 import { useRole } from "@/hooks/use-role"
 import { useTasks } from "@/hooks/use-tasks"
+import { useTeam } from "@/hooks/use-team"
 import { handleClientError } from "@/lib/errors"
 import type { Draft, DraftFormat } from "@/types"
 
 type SortKey = "updated_desc" | "updated_asc" | "format" | "campaign"
 
 export function ReviewQueue() {
-  const { role } = useRole()
-  const { user } = useAuth()
+  const { isReviewer } = useRole()
+  const { currentUser, getMarketers } = useTeam()
   const { db, approveDraft, requestDraftChanges } = useDb()
   const { handleDraftApproved, handleChangesRequested } = useTasks()
   const { approvalStore } = useLibrary()
@@ -30,6 +32,7 @@ export function ReviewQueue() {
   const [query, setQuery] = useState("")
   const [formatFilter, setFormatFilter] = useState<"all" | DraftFormat>("all")
   const [sort, setSort] = useState<SortKey>("updated_desc")
+  const [comments, setComments] = useState<Record<string, string>>({})
 
   const campaignTitles = useMemo(() => {
     const map = new Map<string, string>()
@@ -86,7 +89,7 @@ export function ReviewQueue() {
         },
         addItem: approvalStore.addItem,
         campaignName: campaign?.brief.title ?? "Unknown campaign",
-        reviewer: user?.name ?? "reviewer",
+        reviewer: currentUser.name,
       })
       toast.success("Draft approved.")
     } catch (error) {
@@ -95,31 +98,43 @@ export function ReviewQueue() {
   }
 
   function onRequestChanges(draft: Draft) {
-    const body = window.prompt("What should the marketer change?")
-    if (body === null) return
-    if (!body.trim()) {
-      toast.error("Add a short note for the marketer.")
+    const body = (comments[draft.id] ?? "").trim()
+    if (!body) {
+      toast.error("Add a comment for the marketer.")
       return
     }
 
     try {
-      const updated = requestDraftChanges(draft.id, body.trim())
+      const updated = requestDraftChanges(draft.id, body)
       if (!updated) {
         toast.error("Could not request changes.")
         return
       }
-      handleChangesRequested(updated)
+      const fallbackAuthor = getMarketers()[0]?.name ?? "marketer"
+      handleChangesRequested(updated, {
+        authorName: updated.authorName ?? fallbackAuthor,
+      })
+      setComments((prev) => ({ ...prev, [draft.id]: "" }))
       toast.success("Changes requested.")
     } catch (error) {
       handleClientError(error)
     }
   }
 
+  if (!isReviewer) {
+    return (
+      <EmptyState
+        title="Reviewer role required"
+        description="Switch to a reviewer in the header to approve drafts or request changes."
+      />
+    )
+  }
+
   if (pending.length === 0) {
     return (
       <EmptyState
         title="Queue is empty"
-        description="Switch to the Reviewer role when drafts are submitted. Approvals publish items into the library."
+        description="When marketers submit drafts, they appear here for approve or request changes."
       />
     )
   }
@@ -169,43 +184,54 @@ export function ReviewQueue() {
       ) : (
         <ul className="divide-y divide-border/70 overflow-hidden rounded-2xl border border-border/70 bg-[var(--rx-paper)]">
           {filtered.map((draft) => (
-            <li
-              key={draft.id}
-              className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-start sm:justify-between"
-            >
-              <div className="min-w-0">
-                <p className="font-heading text-base capitalize text-[var(--rx-ink)]">
-                  {draft.format} draft
-                </p>
-                <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                  {draft.content}
-                </p>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  {campaignTitles.get(draft.campaignId) ?? draft.campaignId} ·
-                  via {draft.generationSource}
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
+            <li key={draft.id} className="space-y-4 px-5 py-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <p className="font-heading text-base capitalize text-[var(--rx-ink)]">
+                    {draft.format} draft
+                  </p>
+                  <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                    {draft.content}
+                  </p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {campaignTitles.get(draft.campaignId) ?? draft.campaignId}
+                    {draft.authorName ? ` · by ${draft.authorName}` : ""} · via{" "}
+                    {draft.generationSource}
+                  </p>
+                </div>
                 <StatusBadge status={draft.status} />
-                {role === "reviewer" ? (
-                  <>
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={() => onApprove(draft)}
-                    >
-                      Approve
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => onRequestChanges(draft)}
-                    >
-                      Request changes
-                    </Button>
-                  </>
-                ) : null}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor={`change-${draft.id}`}>
+                  Request changes comment
+                </Label>
+                <Textarea
+                  id={`change-${draft.id}`}
+                  value={comments[draft.id] ?? ""}
+                  onChange={(e) =>
+                    setComments((prev) => ({
+                      ...prev,
+                      [draft.id]: e.target.value,
+                    }))
+                  }
+                  placeholder="What should the marketer change?"
+                  rows={3}
+                />
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" size="sm" onClick={() => onApprove(draft)}>
+                  Approve
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onRequestChanges(draft)}
+                >
+                  Request changes
+                </Button>
               </div>
             </li>
           ))}

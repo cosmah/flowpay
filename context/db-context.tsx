@@ -49,7 +49,7 @@ interface DbContextValue {
     }
   ) => Campaign | undefined
   deleteCampaign: (id: string) => boolean
-  submitDraft: (id: string) => Draft | undefined
+  submitDraft: (id: string, authorName?: string) => Draft | undefined
   requestDraftChanges: (id: string, body: string) => Draft | undefined
   approveDraft: (id: string) => Draft | undefined
 }
@@ -145,8 +145,8 @@ export function DbProvider({ children }: { children: ReactNode }) {
   )
 
   const submitDraft = useCallback(
-    (id: string) => {
-      const draft = h2.submitDraft(id)
+    (id: string, authorName?: string) => {
+      const draft = h2.submitDraft(id, authorName)
       refresh()
       return draft
     },

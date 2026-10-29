@@ -8,6 +8,8 @@ export interface Draft {
   content: string
   status: DraftStatus
   generationSource: "ai" | "template"
+  /** Marketer who submitted the draft (set at submit time). */
+  authorName?: string
   reviewComments: ReviewComment[]
   createdAt: string
   updatedAt: string

@@ -1,11 +1,12 @@
 "use client"
 
-import { useState, type FormEvent } from "react"
+import { useEffect, useState, type FormEvent } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useTasks } from "@/hooks/use-tasks"
+import { useTeam } from "@/hooks/use-team"
 import { handleClientError } from "@/lib/errors"
 import { cn } from "@/lib/utils"
 
@@ -21,13 +22,20 @@ export function AddTaskForm({
   compact?: boolean
 }) {
   const { addTask } = useTasks()
+  const { members, currentUser } = useTeam()
   const [title, setTitle] = useState("")
-  const [owner, setOwner] = useState("marketer")
+  const [owner, setOwner] = useState(currentUser.name)
   const [dueDate, setDueDate] = useState("")
   const [selectedCampaignId, setSelectedCampaignId] = useState(
     campaignId ?? campaigns[0]?.id ?? ""
   )
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!members.some((member) => member.name === owner)) {
+      setOwner(currentUser.name)
+    }
+  }, [members, currentUser.name, owner])
 
   function onSubmit(event: FormEvent) {
     event.preventDefault()
@@ -112,12 +120,19 @@ export function AddTaskForm({
 
         <div className="space-y-2">
           <Label htmlFor="task-owner">Owner</Label>
-          <Input
+          <select
             id="task-owner"
             value={owner}
             onChange={(e) => setOwner(e.target.value)}
-            placeholder="marketer or reviewer"
-          />
+            className="h-10 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          >
+            <option value="">Select owner</option>
+            {members.map((member) => (
+              <option key={member.id} value={member.name}>
+                {member.name} ({member.role})
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="space-y-2">

@@ -10,6 +10,7 @@ import {
   ListChecks,
   PlusCircle,
   ScanSearch,
+  Users,
 } from "lucide-react"
 import { NavMain } from "@/components/layout/nav-main"
 import { NavSecondary } from "@/components/layout/nav-secondary"
@@ -26,7 +27,7 @@ import { useRole } from "@/hooks/use-role"
 import { ROUTES } from "@/lib/constants/routes"
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
-  const { role } = useRole()
+  const { isMarketer, isReviewer } = useRole()
 
   const platform = [
     {
@@ -40,7 +41,9 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       icon: Folders,
       items: [
         { title: "All projects", url: ROUTES.projects },
-        { title: "New project", url: ROUTES.projectNew },
+        ...(isMarketer
+          ? [{ title: "New project", url: ROUTES.projectNew }]
+          : []),
       ],
     },
     {
@@ -49,7 +52,9 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       icon: FolderKanban,
       items: [
         { title: "All campaigns", url: ROUTES.campaigns },
-        { title: "New campaign", url: ROUTES.campaignNew },
+        ...(isMarketer
+          ? [{ title: "New campaign", url: ROUTES.campaignNew }]
+          : []),
       ],
     },
     {
@@ -57,7 +62,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       url: ROUTES.tasks,
       icon: ListChecks,
     },
-    ...(role === "reviewer"
+    ...(isReviewer
       ? [
           {
             title: "Review",
@@ -70,6 +75,11 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       title: "Library",
       url: ROUTES.library,
       icon: Library,
+    },
+    {
+      title: "Team",
+      url: ROUTES.team,
+      icon: Users,
     },
   ]
 
@@ -84,11 +94,15 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       url: ROUTES.howItWorks,
       icon: BookOpen,
     },
-    {
-      title: "Create campaign",
-      url: ROUTES.campaignNew,
-      icon: PlusCircle,
-    },
+    ...(isMarketer
+      ? [
+          {
+            title: "Create campaign",
+            url: ROUTES.campaignNew,
+            icon: PlusCircle,
+          },
+        ]
+      : []),
   ]
 
   return (

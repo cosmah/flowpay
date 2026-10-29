@@ -145,7 +145,7 @@ class H2Database {
     return structuredClone(this.snapshot.drafts.find((d) => d.id === id))
   }
 
-  submitDraft(id: string): Draft | undefined {
+  submitDraft(id: string, authorName?: string): Draft | undefined {
     const index = this.snapshot.drafts.findIndex((d) => d.id === id)
     if (index < 0) return undefined
     const current = this.snapshot.drafts[index]
@@ -155,6 +155,7 @@ class H2Database {
     const updated: Draft = {
       ...current,
       status: "in_review",
+      authorName: authorName ?? current.authorName,
       updatedAt: new Date().toISOString(),
     }
     this.snapshot.drafts[index] = updated

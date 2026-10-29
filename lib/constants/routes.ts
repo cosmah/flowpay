@@ -16,9 +16,12 @@ export const ROUTES = {
   campaign: (id: string) => `/campaigns/${id}` as const,
   campaignEdit: (id: string) => `/campaigns/${id}/edit` as const,
   tasks: "/tasks",
+  tasksOwner: (owner: string) =>
+    `/tasks?owner=${encodeURIComponent(owner)}` as const,
   review: "/review",
   library: "/library",
   libraryItem: (id: string) => `/library/${id}` as const,
+  team: "/team",
 } as const
 
 export const MARKETING_NAV = [
@@ -39,6 +42,7 @@ export const WORKSPACE_NAV: {
   { href: ROUTES.tasks, label: "Tasks", roles: ["marketer", "reviewer"] },
   { href: ROUTES.review, label: "Review", roles: ["reviewer"] },
   { href: ROUTES.library, label: "Library", roles: ["marketer", "reviewer"] },
+  { href: ROUTES.team, label: "Team", roles: ["marketer", "reviewer"] },
 ]
 
 export const AUTH_SESSION_KEY = "flowpay.auth.session"

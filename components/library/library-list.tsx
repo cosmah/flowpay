@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react"
 import { LayoutGrid, LayoutList } from "lucide-react"
 import { LibraryItemCard } from "@/components/library/library-item-card"
+import { LibraryTable } from "@/components/library/library-table"
 import { EmptyState } from "@/components/shared/empty-state"
 import {
   ListToolbar,
@@ -171,18 +172,17 @@ export function LibraryList() {
           title={EMPTY_MESSAGE}
           description="Try clearing search or filters if you expected an item here."
         />
+      ) : view === "list" ? (
+        <LibraryTable items={filtered} />
       ) : (
         <ul
           className={cn(
-            view === "list"
-              ? "flex flex-col gap-3"
-              : // 1 → 2 → 3 → 4 → 5 columns; desktop (xl+) holds five tiles across
-                "grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+            "grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
           )}
         >
           {filtered.map((item) => (
             <li key={item.id} className="min-w-0">
-              <LibraryItemCard item={item} layout={view} />
+              <LibraryItemCard item={item} layout="grid" />
             </li>
           ))}
         </ul>

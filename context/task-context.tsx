@@ -14,14 +14,16 @@ import {
   onChangesRequested,
   onDraftApproved,
   onDraftSubmitted,
+  type ChangesRequestedContext,
+  type DraftSubmitContext,
   type LibraryApprovalContext,
 } from "@/lib/tasks/automation"
 import { createSeedTasks } from "@/lib/tasks/seed"
 import type { Draft, Task, TaskWithMeta } from "@/types"
 import { withTaskMeta } from "@/types"
 
-const STORAGE_KEY = "flowpay.tasks.v1"
-const SEEDED_KEY = "flowpay.tasks.seeded"
+const STORAGE_KEY = "flowpay.tasks.v2"
+const SEEDED_KEY = "flowpay.tasks.seeded.v2"
 
 type NewTaskInput = Omit<Task, "id" | "createdAt"> & {
   id?: string
@@ -33,8 +35,8 @@ interface TaskContextValue {
   addTask: (input: NewTaskInput) => Task
   updateTask: (id: string, patch: Partial<Task>) => Task | undefined
   getTasksByCampaign: (campaignId: string) => TaskWithMeta[]
-  handleDraftSubmitted: (draft: Draft) => void
-  handleChangesRequested: (draft: Draft) => void
+  handleDraftSubmitted: (draft: Draft, ctx: DraftSubmitContext) => void
+  handleChangesRequested: (draft: Draft, ctx: ChangesRequestedContext) => void
   handleDraftApproved: (
     draft: Draft,
     library?: LibraryApprovalContext
@@ -159,15 +161,15 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   )
 
   const handleDraftSubmitted = useCallback(
-    (draft: Draft) => {
-      onDraftSubmitted(draft, storeApi)
+    (draft: Draft, ctx: DraftSubmitContext) => {
+      onDraftSubmitted(draft, storeApi, ctx)
     },
     [storeApi]
   )
 
   const handleChangesRequested = useCallback(
-    (draft: Draft) => {
-      onChangesRequested(draft, storeApi)
+    (draft: Draft, ctx: ChangesRequestedContext) => {
+      onChangesRequested(draft, storeApi, ctx)
     },
     [storeApi]
   )
