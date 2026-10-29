@@ -1,9 +1,20 @@
 import { generateInvitePassword } from "@/lib/auth/password"
-import { inviteEmailHtml, sendEmail } from "@/lib/email/resend"
+import {
+  inviteEmailHtml,
+  inviteEmailText,
+  sendEmail,
+} from "@/lib/email/resend"
 import { resolveSiteOrigin } from "@/lib/site-url"
 import { createAdminClient } from "@/lib/supabase/admin"
 import type { ProfileRole } from "@/lib/supabase/types"
 import { ROLE_LABELS, type UserRole } from "@/types"
+
+function inviteLoginUrl(request: Request, email: string) {
+  const origin = resolveSiteOrigin(request)
+  const url = new URL("/login", origin)
+  url.searchParams.set("email", email)
+  return url.toString()
+}
 
 export async function provisionCompanyInvite(input: {
   request: Request
@@ -20,7 +31,7 @@ export async function provisionCompanyInvite(input: {
   const { request, company, inviter, name, email, role, supabase } = input
   const admin = createAdminClient()
   const password = generateInvitePassword()
-  const loginUrl = `${resolveSiteOrigin(request)}/login`
+  const loginUrl = inviteLoginUrl(request, email)
 
   await supabase
     .from("invitations")
@@ -161,22 +172,26 @@ async function sendInviteCredentialsEmail(input: {
   role: ProfileRole
   inviterName: string
 }) {
-  const loginUrl = `${resolveSiteOrigin(input.request)}/login`
-  if (!input.password) {
+  if (!input.password?.trim()) {
     throw new Error("Invite password missing — email not sent.")
+  }
+
+  const loginUrl = inviteLoginUrl(input.request, input.to)
+  const roleLabel = ROLE_LABELS[input.role as UserRole] ?? input.role
+  const payload = {
+    name: input.name,
+    email: input.to,
+    password: input.password,
+    companyName: input.companyName,
+    role: roleLabel,
+    loginUrl,
+    inviterName: input.inviterName,
   }
 
   await sendEmail({
     to: input.to,
-    subject: `Join ${input.companyName} on FlowPay`,
-    html: inviteEmailHtml({
-      name: input.name,
-      email: input.to,
-      password: input.password,
-      companyName: input.companyName,
-      role: ROLE_LABELS[input.role as UserRole] ?? input.role,
-      loginUrl,
-      inviterName: input.inviterName,
-    }),
+    subject: `Join ${input.companyName} on FlowPay — your login details`,
+    html: inviteEmailHtml(payload),
+    text: inviteEmailText(payload),
   })
 }

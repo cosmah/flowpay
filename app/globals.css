@@ -1,6 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "shadcn/tailwind.css";
+@import "../styles/shadcn-tailwind.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -174,6 +174,27 @@
   }
   to {
     stroke-dashoffset: 0;
+  }
+}
+
+/* Next.js-style outlined brand wordmark. */
+.rx-brand-outline {
+  width: min(100%, 18rem);
+  height: auto;
+  filter: drop-shadow(
+    0 0 28px color-mix(in oklab, var(--rx-lagoon) 35%, transparent)
+  );
+}
+
+@media (min-width: 640px) {
+  .rx-brand-outline {
+    width: min(100%, 28rem);
+  }
+}
+
+@media (min-width: 768px) {
+  .rx-brand-outline {
+    width: min(100%, 36rem);
   }
 }
 

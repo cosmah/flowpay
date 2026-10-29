@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { Suspense } from "react"
 import { AuthCard } from "@/components/auth/auth-card"
 import { AuthRedirect } from "@/components/auth/auth-redirect"
 import { LoginForm } from "@/components/auth/login-form"
@@ -15,7 +16,13 @@ export default function LoginPage() {
           title="Log in to FlowPay"
           description="Access campaigns, review queues, and your approved content library."
         >
-          <LoginForm />
+          <Suspense
+            fallback={
+              <p className="text-sm text-muted-foreground">Loading…</p>
+            }
+          >
+            <LoginForm />
+          </Suspense>
         </AuthCard>
       </AuthRedirect>
     </div>

@@ -242,7 +242,7 @@ export function TeamList() {
             <DialogTitle>Invite member</DialogTitle>
             <DialogDescription>
               Add someone to your company with one role: admin, marketer, or
-              reviewer. We email them a temporary password to sign in.
+              reviewer. We email a sign-in link plus a temporary password.
             </DialogDescription>
           </DialogHeader>
           <InviteMemberForm onSuccess={() => setInviteOpen(false)} />

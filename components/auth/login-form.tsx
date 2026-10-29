@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { useState, type FormEvent } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,8 +14,11 @@ import { cn } from "@/lib/utils"
 type Fields = Partial<Record<"email" | "password" | "form", string>>
 
 export function LoginForm() {
+  const searchParams = useSearchParams()
   const { login } = useAuth()
-  const [email, setEmail] = useState("")
+  const [email, setEmail] = useState(
+    () => searchParams.get("email")?.trim() ?? ""
+  )
   const [password, setPassword] = useState("")
   const [fields, setFields] = useState<Fields>({})
   const [submitting, setSubmitting] = useState(false)
