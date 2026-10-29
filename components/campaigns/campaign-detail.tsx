@@ -17,7 +17,7 @@ import type { Draft } from "@/types"
 
 export function CampaignDetail({ campaignId }: { campaignId: string }) {
   const router = useRouter()
-  const { isMarketer } = useRole()
+  const { canMarket: isMarketer } = useRole()
   const { currentUser, getReviewer } = useTeam()
   const { db, deleteCampaign, submitDraft } = useDb()
   const { handleDraftSubmitted } = useTasks()

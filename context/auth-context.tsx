@@ -14,10 +14,12 @@ import {
   getSessionUser,
   loginWithCredentials,
   logoutSession,
-  registerAccount,
+  registerCompanyAdmin,
+  registerFromInvite,
+  type RegisterResult,
 } from "@/lib/auth/service"
 import { createClient } from "@/lib/supabase/client"
-import type { PublicUser, UserRole } from "@/types"
+import type { PublicUser } from "@/types"
 
 interface AuthContextValue {
   user: PublicUser | null
@@ -27,13 +29,20 @@ interface AuthContextValue {
     email: string
     password: string
   }) => Promise<{ ok: boolean; fields?: Record<string, string>; message?: string }>
-  register: (input: {
+  registerCompany: (input: {
+    name: string
+    companyName: string
+    email: string
+    password: string
+    confirmPassword: string
+  }) => Promise<RegisterResult>
+  registerInvite: (input: {
     name: string
     email: string
     password: string
     confirmPassword: string
-    role: UserRole
-  }) => Promise<{ ok: boolean; fields?: Record<string, string>; message?: string }>
+    inviteToken: string
+  }) => Promise<RegisterResult>
   logout: () => void
 }
 
@@ -87,23 +96,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     []
   )
 
-  const register = useCallback(
+  const registerCompany = useCallback(
+    async (input: {
+      name: string
+      companyName: string
+      email: string
+      password: string
+      confirmPassword: string
+    }) => {
+      const result = await registerCompanyAdmin(input)
+      if (!result.ok) toast.error(result.message)
+      else toast.success(result.message)
+      return result
+    },
+    []
+  )
+
+  const registerInvite = useCallback(
     async (input: {
       name: string
       email: string
       password: string
       confirmPassword: string
-      role: UserRole
+      inviteToken: string
     }) => {
-      const result = await registerAccount(input)
-      if (!result.ok) {
-        toast.error(result.message)
-        return { ok: false, fields: result.fields, message: result.message }
-      }
-
-      setUser(result.user)
-      toast.success("Account created. You're signed in.")
-      return { ok: true }
+      const result = await registerFromInvite(input)
+      if (!result.ok) toast.error(result.message)
+      else toast.success(result.message)
+      return result
     },
     []
   )
@@ -120,10 +140,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: Boolean(user),
       isReady,
       login,
-      register,
+      registerCompany,
+      registerInvite,
       logout,
     }),
-    [user, isReady, login, register, logout]
+    [user, isReady, login, registerCompany, registerInvite, logout]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

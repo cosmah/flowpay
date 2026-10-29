@@ -179,6 +179,22 @@ export function DbProvider({ children }: { children: ReactNode }) {
       reviewerEmail?: string
     }) => {
       const supabase = createClient()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      const { data: profile } = user
+        ? await supabase
+            .from("profiles")
+            .select("company_id")
+            .eq("id", user.id)
+            .maybeSingle()
+        : { data: null }
+
+      if (!profile?.company_id) {
+        return { error: "Join or create a company before adding campaigns." }
+      }
+
+      const companyId = profile.company_id
       const payload = {
         ...campaignBriefToRow(input.brief),
         status: (input.status ?? "draft") as "draft",
@@ -186,6 +202,7 @@ export function DbProvider({ children }: { children: ReactNode }) {
           ? input.createdBy
           : undefined,
         reviewer_email: input.reviewerEmail ?? null,
+        company_id: companyId,
       }
 
       const { data: campaign, error } = await supabase
@@ -212,6 +229,7 @@ export function DbProvider({ children }: { children: ReactNode }) {
         body,
         status: "draft" as const,
         version: 1,
+        company_id: companyId,
       }))
 
       const { data: contentItems } = await supabase
@@ -231,6 +249,7 @@ export function DbProvider({ children }: { children: ReactNode }) {
             due_date: due.toISOString().slice(0, 10),
             status: "pending" as const,
             automated: true,
+            company_id: companyId,
           }))
         )
       }
@@ -326,6 +345,7 @@ export function DbProvider({ children }: { children: ReactNode }) {
           due_date: due.toISOString().slice(0, 10),
           status: "pending",
           automated: true,
+          company_id: data.company_id,
         })
       }
 
@@ -354,6 +374,7 @@ export function DbProvider({ children }: { children: ReactNode }) {
         decision: "changes_requested",
         feedback: body,
         reviewer_email: reviewerEmail ?? null,
+        company_id: data.company_id,
       })
 
       await refresh()
@@ -381,6 +402,7 @@ export function DbProvider({ children }: { children: ReactNode }) {
         decision: "approved",
         feedback: "Approved",
         reviewer_email: reviewerEmail ?? null,
+        company_id: data.company_id,
       })
 
       await supabase
@@ -404,6 +426,7 @@ export function DbProvider({ children }: { children: ReactNode }) {
         tags: [data.type, campaign?.title ?? "campaign"],
         approved_by: reviewerEmail ?? "reviewer",
         approved_at: new Date().toISOString(),
+        company_id: data.company_id,
       })
 
       const { data: siblings } = await supabase

@@ -15,12 +15,40 @@ export type ContentItemStatus =
   | "approved"
 export type TaskRowStatus = "pending" | "in_progress" | "completed" | "blocked"
 export type ReviewDecision = "approved" | "changes_requested"
-export type ProfileRole = "marketer" | "reviewer"
+export type ProfileRole = "admin" | "marketer" | "reviewer"
 export type ProfileStatus = "active" | "disabled"
+export type InvitationStatus = "pending" | "accepted" | "revoked"
 
 export type Database = {
   public: {
     Tables: {
+      companies: {
+        Row: {
+          id: string
+          name: string
+          slug: string
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          slug: string
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          slug?: string
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           id: string
@@ -28,6 +56,7 @@ export type Database = {
           email: string
           role: ProfileRole
           status: ProfileStatus
+          company_id: string | null
           created_at: string
           updated_at: string
         }
@@ -37,6 +66,7 @@ export type Database = {
           email: string
           role?: ProfileRole
           status?: ProfileStatus
+          company_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -46,8 +76,45 @@ export type Database = {
           email?: string
           role?: ProfileRole
           status?: ProfileStatus
+          company_id?: string | null
           created_at?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      invitations: {
+        Row: {
+          id: string
+          company_id: string
+          email: string
+          role: "marketer" | "reviewer"
+          invited_by: string | null
+          token: string
+          status: InvitationStatus
+          created_at: string
+          accepted_at: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          email: string
+          role: "marketer" | "reviewer"
+          invited_by?: string | null
+          token?: string
+          status?: InvitationStatus
+          created_at?: string
+          accepted_at?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          email?: string
+          role?: "marketer" | "reviewer"
+          invited_by?: string | null
+          token?: string
+          status?: InvitationStatus
+          created_at?: string
+          accepted_at?: string | null
         }
         Relationships: []
       }
@@ -64,6 +131,7 @@ export type Database = {
           status: CampaignRowStatus
           owner_email: string | null
           reviewer_email: string | null
+          company_id: string | null
           created_at: string
           updated_at: string
         }
@@ -79,6 +147,7 @@ export type Database = {
           status?: CampaignRowStatus
           owner_email?: string | null
           reviewer_email?: string | null
+          company_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -94,6 +163,7 @@ export type Database = {
           status?: CampaignRowStatus
           owner_email?: string | null
           reviewer_email?: string | null
+          company_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -109,6 +179,7 @@ export type Database = {
           graphic_url: string | null
           status: ContentItemStatus
           version: number
+          company_id: string | null
           created_at: string
           updated_at: string
         }
@@ -121,6 +192,7 @@ export type Database = {
           graphic_url?: string | null
           status?: ContentItemStatus
           version?: number
+          company_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -133,6 +205,7 @@ export type Database = {
           graphic_url?: string | null
           status?: ContentItemStatus
           version?: number
+          company_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -145,6 +218,7 @@ export type Database = {
           reviewer_email: string | null
           decision: ReviewDecision
           feedback: string | null
+          company_id: string | null
           created_at: string
         }
         Insert: {
@@ -153,6 +227,7 @@ export type Database = {
           reviewer_email?: string | null
           decision: ReviewDecision
           feedback?: string | null
+          company_id?: string | null
           created_at?: string
         }
         Update: {
@@ -161,6 +236,7 @@ export type Database = {
           reviewer_email?: string | null
           decision?: ReviewDecision
           feedback?: string | null
+          company_id?: string | null
           created_at?: string
         }
         Relationships: []
@@ -175,6 +251,7 @@ export type Database = {
           due_date: string | null
           status: TaskRowStatus
           automated: boolean
+          company_id: string | null
           created_at: string
           updated_at: string
         }
@@ -187,6 +264,7 @@ export type Database = {
           due_date?: string | null
           status?: TaskRowStatus
           automated?: boolean
+          company_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -199,6 +277,7 @@ export type Database = {
           due_date?: string | null
           status?: TaskRowStatus
           automated?: boolean
+          company_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -216,6 +295,7 @@ export type Database = {
           tags: string[] | null
           approved_at: string
           approved_by: string | null
+          company_id: string | null
         }
         Insert: {
           id?: string
@@ -228,6 +308,7 @@ export type Database = {
           tags?: string[] | null
           approved_at?: string
           approved_by?: string | null
+          company_id?: string | null
         }
         Update: {
           id?: string
@@ -240,6 +321,7 @@ export type Database = {
           tags?: string[] | null
           approved_at?: string
           approved_by?: string | null
+          company_id?: string | null
         }
         Relationships: []
       }
@@ -255,6 +337,7 @@ export type Database = {
           status: string
           error_message: string | null
           sent_at: string
+          company_id: string | null
         }
         Insert: {
           id?: string
@@ -267,6 +350,7 @@ export type Database = {
           status?: string
           error_message?: string | null
           sent_at?: string
+          company_id?: string | null
         }
         Update: {
           id?: string
@@ -279,6 +363,7 @@ export type Database = {
           status?: string
           error_message?: string | null
           sent_at?: string
+          company_id?: string | null
         }
         Relationships: []
       }

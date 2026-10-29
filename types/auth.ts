@@ -5,6 +5,8 @@ export interface PublicUser {
   name: string
   email: string
   role: UserRole
+  companyId: string | null
+  companyName: string | null
   createdAt: string
 }
 
@@ -15,8 +17,9 @@ export interface LoginInput {
 
 export interface RegisterInput {
   name: string
+  companyName: string
   email: string
   password: string
   confirmPassword: string
-  role: UserRole
+  inviteToken?: string
 }

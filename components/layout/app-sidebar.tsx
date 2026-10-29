@@ -26,7 +26,7 @@ import { useRole } from "@/hooks/use-role"
 import { ROUTES } from "@/lib/constants/routes"
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
-  const { isMarketer, isReviewer } = useRole()
+  const { canMarket, canReview } = useRole()
 
   const platform = [
     {
@@ -40,7 +40,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       icon: FolderKanban,
       items: [
         { title: "All campaigns", url: ROUTES.campaigns },
-        ...(isMarketer
+        ...(canMarket
           ? [{ title: "New campaign", url: ROUTES.campaignNew }]
           : []),
       ],
@@ -54,7 +54,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
         { title: "Board", url: ROUTES.taskBoard },
       ],
     },
-    ...(isReviewer
+    ...(canReview
       ? [
           {
             title: "Review",
@@ -86,7 +86,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       url: ROUTES.howItWorks,
       icon: BookOpen,
     },
-    ...(isMarketer
+    ...(canMarket
       ? [
           {
             title: "Create campaign",

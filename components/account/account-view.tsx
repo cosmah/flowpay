@@ -95,6 +95,11 @@ export function AccountView() {
         </div>
         <dl className="grid gap-4 sm:grid-cols-2">
           <Detail icon={Briefcase} label="Role" value={ROLE_LABELS[user.role]} />
+          <Detail
+            icon={Users}
+            label="Company"
+            value={user.companyName ?? "—"}
+          />
           <Detail icon={Users} label="Display name" value={user.name} />
           <Detail icon={Mail} label="Email" value={user.email} />
           <Detail

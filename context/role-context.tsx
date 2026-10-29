@@ -11,25 +11,33 @@ import type { UserRole } from "@/types"
 
 interface RoleContextValue {
   role: UserRole
+  isAdmin: boolean
   isMarketer: boolean
   isReviewer: boolean
+  /** Admin has global access within the company. */
+  canManageTeam: boolean
+  canReview: boolean
+  canMarket: boolean
 }
 
 const RoleContext = createContext<RoleContextValue | null>(null)
 
-/** Role comes only from the signed-in account (no TeamProvider coupling). */
 export function RoleProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   const role: UserRole = user?.role ?? "marketer"
 
-  const value = useMemo(
-    () => ({
+  const value = useMemo(() => {
+    const isAdmin = role === "admin"
+    return {
       role,
-      isMarketer: role === "marketer",
-      isReviewer: role === "reviewer",
-    }),
-    [role]
-  )
+      isAdmin,
+      isMarketer: role === "marketer" || isAdmin,
+      isReviewer: role === "reviewer" || isAdmin,
+      canManageTeam: isAdmin,
+      canReview: role === "reviewer" || isAdmin,
+      canMarket: role === "marketer" || isAdmin,
+    }
+  }, [role])
 
   return <RoleContext.Provider value={value}>{children}</RoleContext.Provider>
 }

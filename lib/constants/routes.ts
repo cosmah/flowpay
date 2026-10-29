@@ -40,14 +40,14 @@ export const WORKSPACE_NAV: {
   label: string
   roles: UserRole[]
 }[] = [
-  { href: ROUTES.dashboard, label: "Dashboard", roles: ["marketer", "reviewer"] },
-  { href: ROUTES.campaigns, label: "Campaigns", roles: ["marketer", "reviewer"] },
-  { href: ROUTES.tasks, label: "Tasks", roles: ["marketer", "reviewer"] },
-  { href: ROUTES.taskBoard, label: "Task board", roles: ["marketer", "reviewer"] },
-  { href: ROUTES.review, label: "Review", roles: ["reviewer"] },
-  { href: ROUTES.library, label: "Library", roles: ["marketer", "reviewer"] },
-  { href: ROUTES.team, label: "Team", roles: ["marketer", "reviewer"] },
-  { href: ROUTES.notifications, label: "Notifications", roles: ["marketer", "reviewer"] },
-  { href: ROUTES.account, label: "Account", roles: ["marketer", "reviewer"] },
+  { href: ROUTES.dashboard, label: "Dashboard", roles: ["admin", "marketer", "reviewer"] },
+  { href: ROUTES.campaigns, label: "Campaigns", roles: ["admin", "marketer", "reviewer"] },
+  { href: ROUTES.tasks, label: "Tasks", roles: ["admin", "marketer", "reviewer"] },
+  { href: ROUTES.taskBoard, label: "Task board", roles: ["admin", "marketer", "reviewer"] },
+  { href: ROUTES.review, label: "Review", roles: ["admin", "reviewer"] },
+  { href: ROUTES.library, label: "Library", roles: ["admin", "marketer", "reviewer"] },
+  { href: ROUTES.team, label: "Team", roles: ["admin", "marketer", "reviewer"] },
+  { href: ROUTES.notifications, label: "Notifications", roles: ["admin", "marketer", "reviewer"] },
+  { href: ROUTES.account, label: "Account", roles: ["admin", "marketer", "reviewer"] },
 ]
 

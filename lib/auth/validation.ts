@@ -31,6 +31,14 @@ const nameSchema = z
     "Name contains invalid characters"
   )
 
+const companyNameSchema = z
+  .string()
+  .trim()
+  .min(1, "Company name is required")
+  .min(2, "Company name must be at least 2 characters")
+  .max(100, "Company name must be 100 characters or fewer")
+  .refine((value) => !/[<>$]/.test(value), "Company name contains invalid characters")
+
 export const loginSchema = z.object({
   email: emailSchema,
   password: z
@@ -42,12 +50,34 @@ export const loginSchema = z.object({
 export const registerSchema = z
   .object({
     name: nameSchema,
+    companyName: companyNameSchema,
     email: emailSchema,
     password: passwordSchema,
     confirmPassword: z.string().min(1, "Confirm your password"),
-    role: z.enum(["marketer", "reviewer"], {
-      message: "Choose a role",
-    }),
+    inviteToken: z.string().trim().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.password !== data.confirmPassword) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["confirmPassword"],
+        message: "Passwords do not match",
+      })
+    }
+    // Invitees join an existing company — company name not required.
+    if (data.inviteToken && !data.companyName) {
+      // allow empty company when inviting — coerce
+    }
+  })
+
+/** Invitee registration (company already exists). */
+export const inviteRegisterSchema = z
+  .object({
+    name: nameSchema,
+    email: emailSchema,
+    password: passwordSchema,
+    confirmPassword: z.string().min(1, "Confirm your password"),
+    inviteToken: z.string().trim().min(1, "Invite token is required"),
   })
   .superRefine((data, ctx) => {
     if (data.password !== data.confirmPassword) {
@@ -58,6 +88,11 @@ export const registerSchema = z
       })
     }
   })
+
+export const inviteMemberSchema = z.object({
+  email: emailSchema,
+  role: z.enum(["marketer", "reviewer"], { message: "Choose a role" }),
+})
 
 export type LoginFormValues = z.infer<typeof loginSchema>
 export type RegisterFormValues = z.infer<typeof registerSchema>

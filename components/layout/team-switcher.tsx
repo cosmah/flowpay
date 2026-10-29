@@ -1,18 +1,18 @@
 "use client"
 
 import Link from "next/link"
-import { FolderKanban, Plus } from "lucide-react"
+import { Building2, FolderKanban } from "lucide-react"
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { useRole } from "@/hooks/use-role"
+import { useAuth } from "@/hooks/use-auth"
 import { ROUTES } from "@/lib/constants/routes"
 
-/** Sidebar header — campaigns workspace (projects removed for Supabase schema). */
+/** Sidebar header — current company workspace. */
 export function TeamSwitcher() {
-  const { isMarketer } = useRole()
+  const { user } = useAuth()
 
   return (
     <SidebarMenu>
@@ -20,13 +20,17 @@ export function TeamSwitcher() {
         <SidebarMenuButton size="lg" asChild>
           <Link href={ROUTES.campaigns}>
             <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-              <FolderKanban className="size-4" />
+              <Building2 className="size-4" />
             </div>
             <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate font-medium">FlowPay</span>
-              <span className="truncate text-xs">Campaigns workspace</span>
+              <span className="truncate font-medium">
+                {user?.companyName ?? "FlowPay"}
+              </span>
+              <span className="truncate text-xs capitalize">
+                {user?.role ?? "member"} · <FolderKanban className="inline size-3" />{" "}
+                campaigns
+              </span>
             </div>
-            {isMarketer ? <Plus className="ml-auto size-4 opacity-60" /> : null}
           </Link>
         </SidebarMenuButton>
       </SidebarMenuItem>

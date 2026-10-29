@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog"
 import { useDb } from "@/hooks/use-db"
 import { useLibrary } from "@/hooks/use-library"
+import { useRole } from "@/hooks/use-role"
 import { useTasks } from "@/hooks/use-tasks"
 import { useTeam } from "@/hooks/use-team"
 import { ROUTES } from "@/lib/constants/routes"
@@ -28,6 +29,7 @@ export function TeamList() {
     setMemberStatus,
     deleteMember,
   } = useTeam()
+  const { canManageTeam } = useRole()
   const { tasks } = useTasks()
   const { items } = useLibrary()
   const { db } = useDb()
@@ -49,12 +51,14 @@ export function TeamList() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end">
-        <Button type="button" onClick={() => setInviteOpen(true)}>
-          <UserPlus />
-          Invite member
-        </Button>
-      </div>
+      {canManageTeam ? (
+        <div className="flex justify-end">
+          <Button type="button" onClick={() => setInviteOpen(true)}>
+            <UserPlus />
+            Invite member
+          </Button>
+        </div>
+      ) : null}
 
       <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {rows.map(({ member, open, overdue, activity }) => {
@@ -146,58 +150,60 @@ export function TeamList() {
                   <Button asChild size="sm" variant="outline">
                     <Link href={ROUTES.tasksOwner(member.name)}>Tasks</Link>
                   </Button>
-                  {disabled ? (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        void setMemberStatus(member.id, "active").then(() =>
-                          toast.success(`${member.name} enabled.`)
-                        )
-                      }}
-                    >
-                      <CheckCircle2 />
-                      Enable
-                    </Button>
-                  ) : (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      disabled={isCurrent}
-                      onClick={() => {
-                        void setMemberStatus(member.id, "disabled").then(() =>
-                          toast.message(`${member.name} disabled.`)
-                        )
-                      }}
-                    >
-                      <Ban />
-                      Disable
-                    </Button>
-                  )}
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="destructive"
-                    disabled={isCurrent}
-                    onClick={() => {
-                      const confirmed = window.confirm(
-                        `Delete ${member.name} from the team?`
-                      )
-                      if (!confirmed) return
-                      void deleteMember(member.id).then((result) => {
-                        if ("error" in result) {
-                          toast.error(result.error)
-                          return
-                        }
-                        toast.success("Member disabled.")
-                      })
-                    }}
-                  >
-                    <Trash2 />
-                    Delete
-                  </Button>
+                  {canManageTeam && !isCurrent ? (
+                    <>
+                      {disabled ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            void setMemberStatus(member.id, "active").then(() =>
+                              toast.success(`${member.name} enabled.`)
+                            )
+                          }}
+                        >
+                          <CheckCircle2 />
+                          Enable
+                        </Button>
+                      ) : (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            void setMemberStatus(member.id, "disabled").then(
+                              () => toast.message(`${member.name} disabled.`)
+                            )
+                          }}
+                        >
+                          <Ban />
+                          Disable
+                        </Button>
+                      )}
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => {
+                          const confirmed = window.confirm(
+                            `Remove ${member.name} from the company?`
+                          )
+                          if (!confirmed) return
+                          void deleteMember(member.id).then((result) => {
+                            if ("error" in result) {
+                              toast.error(result.error)
+                              return
+                            }
+                            toast.success("Member disabled.")
+                          })
+                        }}
+                      >
+                        <Trash2 />
+                        Delete
+                      </Button>
+                    </>
+                  ) : null}
                 </div>
               </div>
             </li>
@@ -210,8 +216,8 @@ export function TeamList() {
           <DialogHeader>
             <DialogTitle>Invite member</DialogTitle>
             <DialogDescription>
-              Add a marketer or reviewer to this workspace. They can sign in
-              after registering with the same email.
+              Invite a marketer or reviewer to your company. They verify email,
+              then join with that role — never another company&apos;s data.
             </DialogDescription>
           </DialogHeader>
           <InviteMemberForm onSuccess={() => setInviteOpen(false)} />

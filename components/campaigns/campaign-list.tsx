@@ -31,7 +31,7 @@ type StatusFilter = "all" | CampaignStatus
 
 export function CampaignList() {
   const { user } = useAuth()
-  const { isMarketer } = useRole()
+  const { canMarket: isMarketer } = useRole()
   const { db, createCampaign } = useDb()
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState("")

@@ -21,7 +21,7 @@ import type { Draft, DraftFormat } from "@/types"
 type SortKey = "updated_desc" | "updated_asc" | "format" | "campaign"
 
 export function ReviewQueue() {
-  const { isReviewer } = useRole()
+  const { canReview } = useRole()
   const { currentUser, getMarketers } = useTeam()
   const { db, approveDraft, requestDraftChanges } = useDb()
   const { handleDraftApproved, handleChangesRequested } = useTasks()
@@ -132,7 +132,7 @@ export function ReviewQueue() {
     }
   }
 
-  if (!isReviewer) {
+  if (!canReview) {
     return (
       <EmptyState
         title="Reviewer role required"

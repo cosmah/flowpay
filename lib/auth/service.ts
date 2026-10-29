@@ -4,20 +4,48 @@ import type { Tables } from "@/lib/supabase/types"
 import {
   fieldErrorsFromZod,
   loginSchema,
-  registerSchema,
   sanitizeAuthInput,
 } from "./validation"
 
 export type AuthResult =
   | { ok: true; user: PublicUser }
+  | {
+      ok: false
+      message: string
+      fields?: Record<string, string>
+      needsVerification?: boolean
+    }
+
+export type RegisterResult =
+  | { ok: true; needsVerification: true; message: string }
   | { ok: false; message: string; fields?: Record<string, string> }
 
-function profileToUser(profile: Tables<"profiles">): PublicUser {
+function normalizeRole(role: string | undefined): UserRole {
+  if (role === "admin" || role === "reviewer" || role === "marketer") return role
+  return "marketer"
+}
+
+async function profileToUser(
+  profile: Tables<"profiles">
+): Promise<PublicUser> {
+  const supabase = createClient()
+  let companyName: string | null = null
+  if (profile.company_id) {
+    const { data } = await supabase
+      .from("companies")
+      .select("name")
+      .eq("id", profile.company_id)
+      .maybeSingle()
+    companyName = data?.name ?? null
+  }
+
   return {
     id: profile.id,
     name: profile.name,
     email: profile.email,
-    role: profile.role,
+    role: normalizeRole(profile.role),
+    companyId: profile.company_id,
+    companyName,
     createdAt: profile.created_at,
   }
 }
@@ -58,20 +86,23 @@ export async function loginWithCredentials(input: {
   })
 
   if (error || !data.user) {
-    const message =
-      error?.message === "Invalid login credentials"
+    const raw = error?.message ?? "Sign in failed."
+    const needsVerification = /confirm|verified|verification/i.test(raw)
+    const message = needsVerification
+      ? "Confirm the verification email we sent before signing in."
+      : raw === "Invalid login credentials"
         ? "Incorrect email or password."
-        : error?.message ?? "Sign in failed."
+        : raw
     return {
       ok: false,
       message,
       fields: { form: message },
+      needsVerification,
     }
   }
 
   const user = await fetchProfile(data.user.id)
   if (!user) {
-    // Profile trigger may lag; fall back to metadata.
     const meta = data.user.user_metadata ?? {}
     return {
       ok: true,
@@ -82,13 +113,18 @@ export async function loginWithCredentials(input: {
           data.user.email?.split("@")[0] ||
           "User",
         email: data.user.email ?? parsed.data.email,
-        role: (meta.role === "reviewer" ? "reviewer" : "marketer") as UserRole,
+        role: normalizeRole(
+          typeof meta.role === "string" ? meta.role : undefined
+        ),
+        companyId: null,
+        companyName:
+          typeof meta.company_name === "string" ? meta.company_name : null,
         createdAt: data.user.created_at,
       },
     }
   }
 
-  if (user && (await isDisabled(user.id))) {
+  if (await isDisabled(user.id)) {
     await supabase.auth.signOut()
     return {
       ok: false,
@@ -110,107 +146,37 @@ async function isDisabled(userId: string) {
   return data?.status === "disabled"
 }
 
-export async function registerAccount(input: {
+/** Company admin self-serve signup — verification email required. */
+export async function registerCompanyAdmin(input: {
+  name: string
+  companyName: string
+  email: string
+  password: string
+  confirmPassword: string
+}): Promise<RegisterResult> {
+  const response = await fetch("/api/auth/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  })
+  const payload = (await response.json()) as RegisterResult
+  return payload
+}
+
+/** Accept a company invite (also requires email verification). */
+export async function registerFromInvite(input: {
   name: string
   email: string
   password: string
   confirmPassword: string
-  role: UserRole
-}): Promise<AuthResult> {
-  const parsed = registerSchema.safeParse({
-    name: sanitizeAuthInput(input.name),
-    email: sanitizeAuthInput(input.email),
-    password: input.password,
-    confirmPassword: input.confirmPassword,
-    role: input.role,
+  inviteToken: string
+}): Promise<RegisterResult> {
+  const response = await fetch("/api/auth/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
   })
-
-  if (!parsed.success) {
-    return {
-      ok: false,
-      message: "Fix the highlighted fields and try again.",
-      fields: fieldErrorsFromZod(parsed.error),
-    }
-  }
-
-  const supabase = createClient()
-  const { data, error } = await supabase.auth.signUp({
-    email: parsed.data.email,
-    password: parsed.data.password,
-    options: {
-      data: {
-        name: parsed.data.name,
-        role: parsed.data.role,
-      },
-    },
-  })
-
-  if (error || !data.user) {
-    const message = error?.message ?? "Could not create account."
-    const fields: Record<string, string> = { form: message }
-    if (/already/i.test(message)) {
-      fields.email = "Email is already registered"
-    }
-    return { ok: false, message, fields }
-  }
-
-  // Supabase projects often require email confirmation; confirm via service role
-  // so the user can enter the workspace immediately after register.
-  if (!data.session) {
-    const confirmRes = await fetch("/api/auth/confirm", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: data.user.id }),
-    })
-    if (!confirmRes.ok) {
-      const payload = (await confirmRes.json().catch(() => null)) as {
-        error?: string
-      } | null
-      return {
-        ok: false,
-        message:
-          payload?.error ??
-          "Account created, but email confirmation is required. Confirm in Supabase Auth settings or your inbox.",
-        fields: { form: "Email confirmation required" },
-      }
-    }
-
-    const login = await supabase.auth.signInWithPassword({
-      email: parsed.data.email,
-      password: parsed.data.password,
-    })
-    if (login.error) {
-      return {
-        ok: false,
-        message: login.error.message,
-        fields: { form: login.error.message },
-      }
-    }
-  }
-
-  // Ensure profile row exists even if trigger is delayed.
-  await supabase.from("profiles").upsert(
-    {
-      id: data.user.id,
-      name: parsed.data.name,
-      email: parsed.data.email,
-      role: parsed.data.role,
-      status: "active",
-    },
-    { onConflict: "id" }
-  )
-
-  const user =
-    (await fetchProfile(data.user.id)) ??
-    ({
-      id: data.user.id,
-      name: parsed.data.name,
-      email: parsed.data.email,
-      role: parsed.data.role,
-      createdAt: data.user.created_at,
-    } satisfies PublicUser)
-
-  return { ok: true, user }
+  return (await response.json()) as RegisterResult
 }
 
 export async function logoutSession() {
@@ -233,10 +199,16 @@ export async function getSessionUser(): Promise<PublicUser | null> {
         session.user.email?.split("@")[0] ||
         "User",
       email: session.user.email ?? "",
-      role:
-        session.user.user_metadata?.role === "reviewer"
-          ? "reviewer"
-          : "marketer",
+      role: normalizeRole(
+        typeof session.user.user_metadata?.role === "string"
+          ? session.user.user_metadata.role
+          : undefined
+      ),
+      companyId: null,
+      companyName:
+        typeof session.user.user_metadata?.company_name === "string"
+          ? session.user.user_metadata.company_name
+          : null,
       createdAt: session.user.created_at,
     }
   )
