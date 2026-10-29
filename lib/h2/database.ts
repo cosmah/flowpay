@@ -2,6 +2,8 @@ import { cloneMockData } from "@/data"
 import type {
   AuthUser,
   Campaign,
+  CampaignBrief,
+  CampaignStatus,
   Draft,
   LibraryItem,
   Task,
@@ -118,6 +120,56 @@ class H2Database {
     }
     this.snapshot.users.push(user)
     return structuredClone(user)
+  }
+
+  createCampaign(input: {
+    brief: CampaignBrief
+    status?: CampaignStatus
+    createdBy: string
+  }): Campaign {
+    const now = new Date().toISOString()
+    const campaign: Campaign = {
+      id: `camp_${crypto.randomUUID().slice(0, 8)}`,
+      brief: structuredClone(input.brief),
+      status: input.status ?? "draft",
+      createdAt: now,
+      updatedAt: now,
+      createdBy: input.createdBy,
+    }
+    this.snapshot.campaigns.unshift(campaign)
+    return structuredClone(campaign)
+  }
+
+  updateCampaign(
+    id: string,
+    input: {
+      brief: CampaignBrief
+      status: CampaignStatus
+    }
+  ): Campaign | undefined {
+    const index = this.snapshot.campaigns.findIndex((c) => c.id === id)
+    if (index < 0) return undefined
+
+    const current = this.snapshot.campaigns[index]
+    const updated: Campaign = {
+      ...current,
+      brief: structuredClone(input.brief),
+      status: input.status,
+      updatedAt: new Date().toISOString(),
+    }
+    this.snapshot.campaigns[index] = updated
+    return structuredClone(updated)
+  }
+
+  deleteCampaign(id: string): boolean {
+    const before = this.snapshot.campaigns.length
+    this.snapshot.campaigns = this.snapshot.campaigns.filter((c) => c.id !== id)
+    this.snapshot.drafts = this.snapshot.drafts.filter((d) => d.campaignId !== id)
+    this.snapshot.tasks = this.snapshot.tasks.filter((t) => t.campaignId !== id)
+    this.snapshot.library = this.snapshot.library.filter(
+      (item) => item.campaignId !== id
+    )
+    return this.snapshot.campaigns.length < before
   }
 }
 

@@ -1,5 +1,10 @@
+import type { Metadata } from "next"
 import { CampaignDetail } from "@/components/campaigns/campaign-detail"
 import { PageHeader } from "@/components/layout/page-header"
+
+export const metadata: Metadata = {
+  title: "Campaign details",
+}
 
 export default async function CampaignDetailPage({
   params,
@@ -11,8 +16,8 @@ export default async function CampaignDetailPage({
   return (
     <div>
       <PageHeader
-        title="Campaign detail"
-        description="Drafts and visual for this campaign. Submit sends items to the review queue."
+        title="Campaign details"
+        description="Review the brief, drafts, and status. Edit to update fields or change workflow status."
       />
       <CampaignDetail campaignId={id} />
     </div>

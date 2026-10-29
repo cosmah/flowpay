@@ -1,11 +1,18 @@
 "use client"
 
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
+import { Button } from "@/components/ui/button"
 import { EmptyState } from "@/components/shared/empty-state"
 import { StatusBadge } from "@/components/shared/status-badge"
 import { useDb } from "@/hooks/use-db"
+import { ROUTES } from "@/lib/constants/routes"
+import { handleClientError } from "@/lib/errors"
 
 export function CampaignDetail({ campaignId }: { campaignId: string }) {
-  const { db } = useDb()
+  const router = useRouter()
+  const { db, deleteCampaign } = useDb()
   const campaign = db.campaigns.find((c) => c.id === campaignId)
   const drafts = db.drafts.filter((d) => d.campaignId === campaignId)
 
@@ -13,22 +20,64 @@ export function CampaignDetail({ campaignId }: { campaignId: string }) {
     return (
       <EmptyState
         title="Campaign not found"
-        description="This id is not in the seeded H2 snapshot. Reload to re-pour /data mock rows."
+        description="This campaign is missing from the current H2 snapshot."
+        action={
+          <Button asChild variant="outline">
+            <Link href={ROUTES.campaigns}>Back to campaigns</Link>
+          </Button>
+        }
       />
     )
   }
 
+  function onDelete() {
+    const confirmed = window.confirm(
+      `Delete “${campaign!.brief.title}”? Related drafts and tasks will be removed from this demo session.`
+    )
+    if (!confirmed) return
+
+    try {
+      const ok = deleteCampaign(campaign!.id)
+      if (!ok) {
+        toast.error("Could not delete this campaign.")
+        return
+      }
+      toast.success("Campaign deleted.")
+      router.push(ROUTES.campaigns)
+    } catch (error) {
+      handleClientError(error)
+    }
+  }
+
   return (
     <div className="space-y-8">
-      <div className="rounded-2xl border border-border/70 bg-[var(--rx-paper)] px-5 py-5">
-        <div className="flex flex-wrap items-center gap-3">
-          <h2 className="font-heading text-xl text-[var(--rx-ink)]">
-            {campaign.brief.title}
-          </h2>
-          <StatusBadge status={campaign.status} />
+      <div className="flex flex-col gap-4 rounded-2xl border border-border/70 bg-[var(--rx-paper)] px-5 py-5 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 space-y-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="font-heading text-xl text-[var(--rx-ink)]">
+              {campaign.brief.title}
+            </h2>
+            <StatusBadge status={campaign.status} />
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Updated {new Date(campaign.updatedAt).toLocaleString()} · Created by{" "}
+            {campaign.createdBy}
+          </p>
         </div>
-        <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-          <div>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline">
+            <Link href={ROUTES.campaignEdit(campaign.id)}>Edit</Link>
+          </Button>
+          <Button type="button" variant="destructive" onClick={onDelete}>
+            Delete
+          </Button>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-border/70 bg-[var(--rx-paper)] px-5 py-5">
+        <h3 className="font-heading text-lg text-[var(--rx-ink)]">Brief</h3>
+        <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2">
+          <div className="sm:col-span-2">
             <dt className="text-muted-foreground">Objective</dt>
             <dd className="mt-1 text-foreground">{campaign.brief.objective}</dd>
           </div>
@@ -40,10 +89,22 @@ export function CampaignDetail({ campaignId }: { campaignId: string }) {
             <dt className="text-muted-foreground">Tone</dt>
             <dd className="mt-1 text-foreground">{campaign.brief.tone}</dd>
           </div>
+          <div className="sm:col-span-2">
+            <dt className="text-muted-foreground">Key message</dt>
+            <dd className="mt-1 text-foreground">{campaign.brief.keyMessage}</dd>
+          </div>
           <div>
             <dt className="text-muted-foreground">Channels</dt>
-            <dd className="mt-1 text-foreground">
+            <dd className="mt-1 capitalize text-foreground">
               {campaign.brief.channels.join(", ")}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Deadline</dt>
+            <dd className="mt-1 text-foreground">
+              {campaign.brief.deadline
+                ? new Date(campaign.brief.deadline).toLocaleDateString()
+                : "Not set"}
             </dd>
           </div>
         </dl>

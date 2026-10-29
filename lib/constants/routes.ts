@@ -10,6 +10,7 @@ export const ROUTES = {
   campaigns: "/campaigns",
   campaignNew: "/campaigns/new",
   campaign: (id: string) => `/campaigns/${id}` as const,
+  campaignEdit: (id: string) => `/campaigns/${id}/edit` as const,
   tasks: "/tasks",
   review: "/review",
   library: "/library",
