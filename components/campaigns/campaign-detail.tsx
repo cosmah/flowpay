@@ -17,7 +17,7 @@ import type { Draft } from "@/types"
 
 export function CampaignDetail({ campaignId }: { campaignId: string }) {
   const router = useRouter()
-  const { canMarket: isMarketer } = useRole()
+  const { canMarket: isMarketer, canReview } = useRole()
   const { getReviewer } = useTeam()
   const { db, deleteCampaign, submitDraft } = useDb()
   const { handleDraftSubmitted } = useTasks()
@@ -210,7 +210,7 @@ export function CampaignDetail({ campaignId }: { campaignId: string }) {
                           Submit for review
                         </Button>
                       ) : null}
-                      {draft.status === "in_review" ? (
+                      {draft.status === "in_review" && canReview ? (
                         <Button asChild size="sm" variant="outline">
                           <Link href={ROUTES.reviewDraft(draft.id)}>
                             Open review

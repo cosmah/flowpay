@@ -27,7 +27,7 @@ import { useRole } from "@/hooks/use-role"
 import { ROUTES } from "@/lib/constants/routes"
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
-  const { canMarket, canReview } = useRole()
+  const { canMarket, canReview, canManageTeam } = useRole()
 
   const platform = [
     {
@@ -80,11 +80,15 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       url: ROUTES.library,
       icon: Library,
     },
-    {
-      title: "Team",
-      url: ROUTES.team,
-      icon: Users,
-    },
+    ...(canManageTeam
+      ? [
+          {
+            title: "Team",
+            url: ROUTES.team,
+            icon: Users,
+          },
+        ]
+      : []),
   ]
 
   const shortcuts = [

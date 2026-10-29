@@ -7,11 +7,13 @@ import { Button } from "@/components/ui/button"
 import { EmptyState } from "@/components/shared/empty-state"
 import { useDb } from "@/hooks/use-db"
 import { useProject } from "@/hooks/use-project"
+import { useRole } from "@/hooks/use-role"
 import { ROUTES } from "@/lib/constants/routes"
 import { handleClientError } from "@/lib/errors"
 
 export function ProjectDetail({ projectId }: { projectId: string }) {
   const router = useRouter()
+  const { canMarket } = useRole()
   const { db, deleteProject } = useDb()
   const { activeProjectId, setActiveProjectId } = useProject()
   const project = db.projects.find((item) => item.id === projectId)
@@ -77,12 +79,16 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
               Switch to project
             </Button>
           ) : null}
-          <Button asChild variant="outline">
-            <Link href={ROUTES.projectEdit(project.id)}>Edit</Link>
-          </Button>
-          <Button type="button" variant="destructive" onClick={onDelete}>
-            Delete
-          </Button>
+          {canMarket ? (
+            <>
+              <Button asChild variant="outline">
+                <Link href={ROUTES.projectEdit(project.id)}>Edit</Link>
+              </Button>
+              <Button type="button" variant="destructive" onClick={onDelete}>
+                Delete
+              </Button>
+            </>
+          ) : null}
         </div>
       </div>
 
@@ -91,14 +97,20 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
           <h3 className="font-heading text-lg text-[var(--rx-ink)]">
             Campaigns in this project
           </h3>
-          <Button asChild size="sm">
-            <Link href={ROUTES.campaignNew}>New campaign</Link>
-          </Button>
+          {canMarket ? (
+            <Button asChild size="sm">
+              <Link href={ROUTES.campaignNew}>New campaign</Link>
+            </Button>
+          ) : null}
         </div>
         {campaigns.length === 0 ? (
           <EmptyState
             title="No campaigns yet"
-            description="Create a campaign brief under this project to start the content workflow."
+            description={
+              canMarket
+                ? "Create a campaign under this project to start the content workflow."
+                : "Marketers add campaigns under this project."
+            }
           />
         ) : (
           <ul className="divide-y divide-border/70 overflow-hidden rounded-2xl border border-border/70 bg-[var(--rx-paper)]">

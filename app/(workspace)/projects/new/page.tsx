@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { RoleGate } from "@/components/auth/role-gate"
 import { PageHeader } from "@/components/layout/page-header"
 import { ProjectCreateForm } from "@/components/projects/project-create-form"
 
@@ -8,12 +9,14 @@ export const metadata: Metadata = {
 
 export default function NewProjectPage() {
   return (
-    <div>
-      <PageHeader
-        title="New project"
-        description="Create a project container for campaign briefs and drafts."
-      />
-      <ProjectCreateForm />
-    </div>
+    <RoleGate allow="market">
+      <div>
+        <PageHeader
+          title="New project"
+          description="Create a project container for campaign posts and drafts."
+        />
+        <ProjectCreateForm />
+      </div>
+    </RoleGate>
   )
 }

@@ -48,7 +48,7 @@ export const WORKSPACE_NAV: {
   { href: ROUTES.taskBoard, label: "Task board", roles: ["admin", "marketer", "reviewer"] },
   { href: ROUTES.review, label: "Review", roles: ["admin", "reviewer"] },
   { href: ROUTES.library, label: "Library", roles: ["admin", "marketer", "reviewer"] },
-  { href: ROUTES.team, label: "Team", roles: ["admin", "marketer", "reviewer"] },
+  { href: ROUTES.team, label: "Team", roles: ["admin"] },
   { href: ROUTES.notifications, label: "Notifications", roles: ["admin", "marketer", "reviewer"] },
   { href: ROUTES.account, label: "Account", roles: ["admin", "marketer", "reviewer"] },
 ]

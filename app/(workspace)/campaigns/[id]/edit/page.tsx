@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { RoleGate } from "@/components/auth/role-gate"
 import { CampaignEditForm } from "@/components/campaigns/campaign-edit-form"
 import { PageHeader } from "@/components/layout/page-header"
 import { RouteParams } from "@/components/shared/route-params"
@@ -13,15 +14,17 @@ export default function EditCampaignPage({
   params: Promise<{ id: string }>
 }) {
   return (
-    <div>
-      <PageHeader
-        title="Update campaign"
-        description="Change brief fields or status. Validation blocks incomplete or invalid input."
-      />
-      <RouteParams>
-        <CampaignEditBody params={params} />
-      </RouteParams>
-    </div>
+    <RoleGate allow="market">
+      <div>
+        <PageHeader
+          title="Update campaign"
+          description="Update post content, banners, channels, or status."
+        />
+        <RouteParams>
+          <CampaignEditBody params={params} />
+        </RouteParams>
+      </div>
+    </RoleGate>
   )
 }
 

@@ -15,7 +15,7 @@ import { ROUTES } from "@/lib/constants/routes"
 
 export function DashboardView() {
   const { user, isReady } = useAuth()
-  const { role } = useRole()
+  const { role, canMarket, canReview } = useRole()
   const { db } = useDb()
   const { tasks } = useTasks()
   const { items: libraryItems } = useLibrary()
@@ -36,11 +36,32 @@ export function DashboardView() {
       (draft) => draft.status === "changes_requested"
     ).length
 
+    const focusStat = canReview && !canMarket
+      ? {
+          label: "In review",
+          value: inReview,
+          hint: "Pending decisions",
+          href: ROUTES.review,
+        }
+      : canMarket && !canReview
+        ? {
+            label: "Needs edits",
+            value: changesRequested,
+            hint: "Changes requested",
+            href: ROUTES.campaigns,
+          }
+        : {
+            label: "In review",
+            value: inReview,
+            hint: "Pending decisions",
+            href: ROUTES.review,
+          }
+
     return [
       {
         label: "Campaigns",
         value: db.campaigns.length,
-        hint: "Active briefs",
+        hint: "Active posts",
         href: ROUTES.campaigns,
       },
       {
@@ -49,12 +70,7 @@ export function DashboardView() {
         hint: "Owner · due · status",
         href: ROUTES.tasks,
       },
-      {
-        label: role === "marketer" ? "Needs edits" : "In review",
-        value: role === "marketer" ? changesRequested : inReview,
-        hint: role === "marketer" ? "Changes requested" : "Pending decisions",
-        href: role === "marketer" ? ROUTES.campaigns : ROUTES.review,
-      },
+      focusStat,
       {
         label: "Library",
         value: libraryItems.length,
@@ -62,7 +78,7 @@ export function DashboardView() {
         href: ROUTES.library,
       },
     ]
-  }, [db, role, tasks, libraryItems.length])
+  }, [db, canMarket, canReview, tasks, libraryItems.length])
 
   const recentCampaigns = useMemo(
     () =>
@@ -76,17 +92,21 @@ export function DashboardView() {
   )
 
   const attentionItems = useMemo(() => {
-    if (role === "reviewer") {
-      return db.drafts
+    if (canReview) {
+      const pending = db.drafts
         .filter((draft) => draft.status === "in_review")
         .slice(0, 5)
-        .map((draft) => ({
-          id: draft.id,
-          title: `${draft.format} draft`,
-          meta: draft.campaignId,
-          status: draft.status,
-          href: ROUTES.review,
-        }))
+        .map((draft) => {
+          const campaign = db.campaigns.find((c) => c.id === draft.campaignId)
+          return {
+            id: draft.id,
+            title: `${draft.format} draft`,
+            meta: campaign?.brief.title ?? draft.campaignId,
+            status: draft.status,
+            href: ROUTES.reviewDraft(draft.id),
+          }
+        })
+      if (pending.length > 0 || !canMarket) return pending
     }
 
     return tasks
@@ -99,7 +119,7 @@ export function DashboardView() {
         status: task.status,
         href: ROUTES.tasks,
       }))
-  }, [db.drafts, tasks, role])
+  }, [db.campaigns, db.drafts, tasks, canMarket, canReview])
 
   if (!isReady || booting) {
     return <DashboardSkeleton />
@@ -113,15 +133,18 @@ export function DashboardView() {
         title={`Welcome, ${firstName}`}
         description="Track briefs, reviews, and approved assets from one FlowPay dashboard."
         actions={
-          role === "marketer" ? (
-            <Button asChild>
-              <Link href={ROUTES.campaignNew}>New campaign</Link>
-            </Button>
-          ) : (
-            <Button asChild>
-              <Link href={ROUTES.review}>Open review queue</Link>
-            </Button>
-          )
+          <div className="flex flex-wrap gap-2">
+            {canMarket ? (
+              <Button asChild>
+                <Link href={ROUTES.campaignNew}>New campaign</Link>
+              </Button>
+            ) : null}
+            {canReview ? (
+              <Button asChild variant={canMarket ? "outline" : "default"}>
+                <Link href={ROUTES.review}>Open review queue</Link>
+              </Button>
+            ) : null}
+          </div>
         }
       />
 
@@ -181,10 +204,18 @@ export function DashboardView() {
         <section>
           <div className="mb-3 flex items-center justify-between gap-3">
             <h2 className="font-heading text-lg text-[var(--rx-ink)]">
-              {role === "reviewer" ? "Needs your review" : "Tasks needing attention"}
+              {canReview &&
+              (db.drafts.some((d) => d.status === "in_review") || !canMarket)
+                ? "Needs review"
+                : "Tasks needing attention"}
             </h2>
             <Link
-              href={role === "reviewer" ? ROUTES.review : ROUTES.tasks}
+              href={
+                canReview &&
+                (db.drafts.some((d) => d.status === "in_review") || !canMarket)
+                  ? ROUTES.review
+                  : ROUTES.tasks
+              }
               className="text-xs font-medium text-[var(--rx-lagoon)] hover:underline"
             >
               View all
