@@ -6,7 +6,7 @@ export default function LibraryPage() {
     <div>
       <PageHeader
         title="Library"
-        description="Approved items only. Search, copy, download, or run a simulated test send."
+        description="Approved materials only. Search, filter, copy, or download — drafts never appear here."
       />
       <LibraryList />
     </div>

@@ -13,6 +13,7 @@ import type {
   Campaign,
   CampaignBrief,
   CampaignStatus,
+  Draft,
   Project,
   ProjectStatus,
 } from "@/types"
@@ -48,6 +49,9 @@ interface DbContextValue {
     }
   ) => Campaign | undefined
   deleteCampaign: (id: string) => boolean
+  submitDraft: (id: string) => Draft | undefined
+  requestDraftChanges: (id: string, body: string) => Draft | undefined
+  approveDraft: (id: string) => Draft | undefined
 }
 
 const DbContext = createContext<DbContextValue | null>(null)
@@ -140,6 +144,33 @@ export function DbProvider({ children }: { children: ReactNode }) {
     [refresh]
   )
 
+  const submitDraft = useCallback(
+    (id: string) => {
+      const draft = h2.submitDraft(id)
+      refresh()
+      return draft
+    },
+    [refresh]
+  )
+
+  const requestDraftChanges = useCallback(
+    (id: string, body: string) => {
+      const draft = h2.requestDraftChanges(id, body)
+      refresh()
+      return draft
+    },
+    [refresh]
+  )
+
+  const approveDraft = useCallback(
+    (id: string) => {
+      const draft = h2.approveDraft(id)
+      refresh()
+      return draft
+    },
+    [refresh]
+  )
+
   const value = useMemo<DbContextValue>(
     () => ({
       db,
@@ -152,6 +183,9 @@ export function DbProvider({ children }: { children: ReactNode }) {
       createCampaign,
       updateCampaign,
       deleteCampaign,
+      submitDraft,
+      requestDraftChanges,
+      approveDraft,
     }),
     [
       db,
@@ -164,6 +198,9 @@ export function DbProvider({ children }: { children: ReactNode }) {
       createCampaign,
       updateCampaign,
       deleteCampaign,
+      submitDraft,
+      requestDraftChanges,
+      approveDraft,
     ]
   )
 

@@ -141,6 +141,63 @@ class H2Database {
     return structuredClone(rows)
   }
 
+  getDraft(id: string): Draft | undefined {
+    return structuredClone(this.snapshot.drafts.find((d) => d.id === id))
+  }
+
+  submitDraft(id: string): Draft | undefined {
+    const index = this.snapshot.drafts.findIndex((d) => d.id === id)
+    if (index < 0) return undefined
+    const current = this.snapshot.drafts[index]
+    if (current.status !== "draft" && current.status !== "changes_requested") {
+      return undefined
+    }
+    const updated: Draft = {
+      ...current,
+      status: "in_review",
+      updatedAt: new Date().toISOString(),
+    }
+    this.snapshot.drafts[index] = updated
+    return structuredClone(updated)
+  }
+
+  requestDraftChanges(id: string, body: string): Draft | undefined {
+    const index = this.snapshot.drafts.findIndex((d) => d.id === id)
+    if (index < 0) return undefined
+    const current = this.snapshot.drafts[index]
+    if (current.status !== "in_review") return undefined
+    const updated: Draft = {
+      ...current,
+      status: "changes_requested",
+      reviewComments: [
+        ...current.reviewComments,
+        {
+          id: `rc_${crypto.randomUUID().slice(0, 8)}`,
+          authorRole: "reviewer",
+          body,
+          createdAt: new Date().toISOString(),
+        },
+      ],
+      updatedAt: new Date().toISOString(),
+    }
+    this.snapshot.drafts[index] = updated
+    return structuredClone(updated)
+  }
+
+  approveDraft(id: string): Draft | undefined {
+    const index = this.snapshot.drafts.findIndex((d) => d.id === id)
+    if (index < 0) return undefined
+    const current = this.snapshot.drafts[index]
+    if (current.status !== "in_review") return undefined
+    const updated: Draft = {
+      ...current,
+      status: "approved",
+      updatedAt: new Date().toISOString(),
+    }
+    this.snapshot.drafts[index] = updated
+    return structuredClone(updated)
+  }
+
   listTasks(): Task[] {
     return structuredClone(this.snapshot.tasks)
   }

@@ -1,41 +1,151 @@
 "use client"
 
+import { useMemo, useState } from "react"
+import { Badge } from "@/components/ui/badge"
 import { EmptyState } from "@/components/shared/empty-state"
 import { StatusBadge } from "@/components/shared/status-badge"
+import { AddTaskForm } from "@/components/tasks/add-task-form"
 import { useDb } from "@/hooks/use-db"
+import { useTasks } from "@/hooks/use-tasks"
+import type { TaskStatus } from "@/types"
 
 export function TaskList() {
   const { db } = useDb()
-  const tasks = db.tasks
+  const { tasks, updateTask } = useTasks()
+  const [ownerFilter, setOwnerFilter] = useState("all")
+  const [statusFilter, setStatusFilter] = useState<"all" | TaskStatus>("all")
 
-  if (tasks.length === 0) {
-    return (
-      <EmptyState
-        title="No open tasks"
-        description="When a marketer submits a draft, a reviewer task appears here automatically."
-      />
-    )
-  }
+  const campaignTitles = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const campaign of db.campaigns) {
+      map.set(campaign.id, campaign.brief.title)
+    }
+    return map
+  }, [db.campaigns])
+
+  const owners = useMemo(() => {
+    const set = new Set(tasks.map((task) => task.owner))
+    return Array.from(set).sort()
+  }, [tasks])
+
+  const filtered = useMemo(() => {
+    return tasks.filter((task) => {
+      if (ownerFilter !== "all" && task.owner !== ownerFilter) return false
+      if (statusFilter !== "all" && task.status !== statusFilter) return false
+      return true
+    })
+  }, [tasks, ownerFilter, statusFilter])
+
+  const campaignOptions = db.campaigns.map((campaign) => ({
+    id: campaign.id,
+    title: campaign.brief.title,
+  }))
 
   return (
-    <ul className="divide-y divide-border/70 overflow-hidden rounded-2xl border border-border/70 bg-[var(--rx-paper)]">
-      {tasks.map((task) => (
-        <li
-          key={task.id}
-          className="flex flex-col gap-2 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+    <div className="space-y-6">
+      <div className="flex flex-wrap gap-3">
+        <select
+          aria-label="Filter by owner"
+          value={ownerFilter}
+          onChange={(e) => setOwnerFilter(e.target.value)}
+          className="h-10 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
         >
-          <div>
-            <p className="font-heading text-base text-[var(--rx-ink)]">
-              {task.title}
-            </p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Owner: {task.ownerRole} · Due{" "}
-              {new Date(task.dueAt).toLocaleString()}
-            </p>
-          </div>
-          <StatusBadge status={task.status} />
-        </li>
-      ))}
-    </ul>
+          <option value="all">All owners</option>
+          {owners.map((owner) => (
+            <option key={owner} value={owner}>
+              {owner}
+            </option>
+          ))}
+        </select>
+        <select
+          aria-label="Filter by status"
+          value={statusFilter}
+          onChange={(e) =>
+            setStatusFilter(e.target.value as "all" | TaskStatus)
+          }
+          className="h-10 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+        >
+          <option value="all">All statuses</option>
+          <option value="todo">To do</option>
+          <option value="in_progress">In progress</option>
+          <option value="done">Done</option>
+        </select>
+      </div>
+
+      {filtered.length === 0 ? (
+        <EmptyState
+          title="No tasks match"
+          description="Adjust filters, submit a draft for review, or add a manual task below."
+        />
+      ) : (
+        <div className="overflow-x-auto rounded-2xl border border-border/70 bg-[var(--rx-paper)]">
+          <table className="w-full min-w-[640px] text-left text-sm">
+            <thead className="border-b border-border/70 text-muted-foreground">
+              <tr>
+                <th className="px-4 py-3 font-medium">Title</th>
+                <th className="px-4 py-3 font-medium">Campaign</th>
+                <th className="px-4 py-3 font-medium">Owner</th>
+                <th className="px-4 py-3 font-medium">Due date</th>
+                <th className="px-4 py-3 font-medium">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/70">
+              {filtered.map((task) => (
+                <tr key={task.id}>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-heading text-[var(--rx-ink)]">
+                        {task.title}
+                      </span>
+                      {task.autoGenerated ? (
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] uppercase"
+                        >
+                          Auto
+                        </Badge>
+                      ) : null}
+                      {task.isOverdue ? (
+                        <Badge className="bg-destructive text-destructive-foreground">
+                          Overdue
+                        </Badge>
+                      ) : null}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {campaignTitles.get(task.campaignId) ?? task.campaignId}
+                  </td>
+                  <td className="px-4 py-3 capitalize">{task.owner}</td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {new Date(task.dueDate).toLocaleString()}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <StatusBadge status={task.status} />
+                      <select
+                        aria-label={`Status for ${task.title}`}
+                        value={task.status}
+                        onChange={(e) =>
+                          updateTask(task.id, {
+                            status: e.target.value as TaskStatus,
+                          })
+                        }
+                        className="h-9 rounded-lg border border-input bg-transparent px-2 text-sm"
+                      >
+                        <option value="todo">To do</option>
+                        <option value="in_progress">In progress</option>
+                        <option value="done">Done</option>
+                      </select>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <AddTaskForm campaigns={campaignOptions} />
+    </div>
   )
 }

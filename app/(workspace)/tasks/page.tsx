@@ -6,7 +6,7 @@ export default function TasksPage() {
     <div>
       <PageHeader
         title="Tasks"
-        description="Review tasks show owner, due date, and status. Submitting a draft auto-creates a task due in 24 hours."
+        description="Review, revise, and manual tasks. Submitting a draft auto-creates a review task due in 24 hours."
       />
       <TaskList />
     </div>

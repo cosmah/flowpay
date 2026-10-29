@@ -4,15 +4,21 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
+import { CampaignTasksPanel } from "@/components/tasks/campaign-tasks-panel"
 import { EmptyState } from "@/components/shared/empty-state"
 import { StatusBadge } from "@/components/shared/status-badge"
 import { useDb } from "@/hooks/use-db"
+import { useRole } from "@/hooks/use-role"
+import { useTasks } from "@/hooks/use-tasks"
 import { ROUTES } from "@/lib/constants/routes"
 import { handleClientError } from "@/lib/errors"
+import type { Draft } from "@/types"
 
 export function CampaignDetail({ campaignId }: { campaignId: string }) {
   const router = useRouter()
-  const { db, deleteCampaign } = useDb()
+  const { role } = useRole()
+  const { db, deleteCampaign, submitDraft } = useDb()
+  const { handleDraftSubmitted } = useTasks()
   const campaign = db.campaigns.find((c) => c.id === campaignId)
   const project = db.projects.find((p) => p.id === campaign?.projectId)
   const drafts = db.drafts.filter((d) => d.campaignId === campaignId)
@@ -45,6 +51,20 @@ export function CampaignDetail({ campaignId }: { campaignId: string }) {
       }
       toast.success("Campaign deleted.")
       router.push(ROUTES.campaigns)
+    } catch (error) {
+      handleClientError(error)
+    }
+  }
+
+  function onSubmitDraft(draft: Draft) {
+    try {
+      const updated = submitDraft(draft.id)
+      if (!updated) {
+        toast.error("This draft cannot be submitted.")
+        return
+      }
+      handleDraftSubmitted(updated)
+      toast.success("Draft submitted for review.")
     } catch (error) {
       handleClientError(error)
     }
@@ -137,28 +157,51 @@ export function CampaignDetail({ campaignId }: { campaignId: string }) {
           />
         ) : (
           <ul className="divide-y divide-border/70 overflow-hidden rounded-2xl border border-border/70 bg-[var(--rx-paper)]">
-            {drafts.map((draft) => (
-              <li
-                key={draft.id}
-                className="flex flex-col gap-2 px-5 py-4 sm:flex-row sm:items-start sm:justify-between"
-              >
-                <div className="min-w-0">
-                  <p className="font-heading capitalize text-[var(--rx-ink)]">
-                    {draft.format}
-                    <span className="ml-2 text-xs font-normal text-muted-foreground">
-                      via {draft.generationSource}
-                    </span>
-                  </p>
-                  <p className="mt-1 line-clamp-3 text-sm text-muted-foreground">
-                    {draft.content}
-                  </p>
-                </div>
-                <StatusBadge status={draft.status} />
-              </li>
-            ))}
+            {drafts.map((draft) => {
+              const canSubmit =
+                role === "marketer" &&
+                (draft.status === "draft" ||
+                  draft.status === "changes_requested")
+
+              return (
+                <li
+                  key={draft.id}
+                  className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-start sm:justify-between"
+                >
+                  <div className="min-w-0">
+                    <p className="font-heading capitalize text-[var(--rx-ink)]">
+                      {draft.format}
+                      <span className="ml-2 text-xs font-normal text-muted-foreground">
+                        via {draft.generationSource}
+                      </span>
+                    </p>
+                    <p className="mt-1 line-clamp-3 text-sm text-muted-foreground">
+                      {draft.content}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <StatusBadge status={draft.status} />
+                    {canSubmit ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => onSubmitDraft(draft)}
+                      >
+                        Submit
+                      </Button>
+                    ) : null}
+                  </div>
+                </li>
+              )
+            })}
           </ul>
         )}
       </section>
+
+      <CampaignTasksPanel
+        campaignId={campaign.id}
+        campaignTitle={campaign.brief.title}
+      />
     </div>
   )
 }

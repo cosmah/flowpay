@@ -10,15 +10,16 @@ import { cn } from "@/lib/utils"
 type Status = DraftStatus | CampaignStatus | TaskStatus
 
 const tone: Record<Status, string> = {
-  draft: "bg-[var(--rx-mist)] text-[var(--rx-ink)] border-transparent",
+  // Draft: muted outline — clearly different from the green Approved chip.
+  draft:
+    "border border-dashed border-slate-400/70 bg-slate-100/80 text-slate-700",
   in_review: "bg-[var(--rx-lagoon)]/15 text-[var(--rx-ink)] border-transparent",
-  approved: "bg-[var(--rx-signal)]/20 text-[var(--rx-ink)] border-transparent",
+  approved: "border-transparent bg-emerald-500/90 text-white",
   changes_requested:
     "bg-amber-100 text-amber-950 border-transparent dark:bg-amber-950/40 dark:text-amber-100",
-  open: "bg-[var(--rx-mist)] text-[var(--rx-ink)] border-transparent",
+  todo: "bg-[var(--rx-mist)] text-[var(--rx-ink)] border-transparent",
   in_progress: "bg-[var(--rx-lagoon)]/15 text-[var(--rx-ink)] border-transparent",
   done: "bg-[var(--rx-signal)]/20 text-[var(--rx-ink)] border-transparent",
-  overdue: "bg-destructive/10 text-destructive border-transparent",
 }
 
 const labels: Record<Status, string> = {

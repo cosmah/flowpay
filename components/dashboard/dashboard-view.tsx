@@ -8,13 +8,17 @@ import { PageHeader } from "@/components/layout/page-header"
 import { StatusBadge } from "@/components/shared"
 import { useAuth } from "@/hooks/use-auth"
 import { useDb } from "@/hooks/use-db"
+import { useLibrary } from "@/hooks/use-library"
 import { useRole } from "@/hooks/use-role"
+import { useTasks } from "@/hooks/use-tasks"
 import { ROUTES } from "@/lib/constants/routes"
 
 export function DashboardView() {
   const { user, isReady } = useAuth()
   const { role } = useRole()
   const { db } = useDb()
+  const { tasks } = useTasks()
+  const { items: libraryItems } = useLibrary()
   const [booting, setBooting] = useState(true)
 
   useEffect(() => {
@@ -24,8 +28,8 @@ export function DashboardView() {
   }, [])
 
   const stats = useMemo(() => {
-    const openTasks = db.tasks.filter(
-      (task) => task.status === "open" || task.status === "in_progress"
+    const openTasks = tasks.filter(
+      (task) => task.status === "todo" || task.status === "in_progress"
     ).length
     const inReview = db.drafts.filter((draft) => draft.status === "in_review").length
     const changesRequested = db.drafts.filter(
@@ -53,12 +57,12 @@ export function DashboardView() {
       },
       {
         label: "Library",
-        value: db.library.length,
+        value: libraryItems.length,
         hint: "Approved only",
         href: ROUTES.library,
       },
     ]
-  }, [db, role])
+  }, [db, role, tasks, libraryItems.length])
 
   const recentCampaigns = useMemo(
     () =>
@@ -85,17 +89,17 @@ export function DashboardView() {
         }))
     }
 
-    return db.tasks
-      .filter((task) => task.status === "open" || task.status === "overdue")
+    return tasks
+      .filter((task) => task.status !== "done")
       .slice(0, 5)
       .map((task) => ({
         id: task.id,
         title: task.title,
-        meta: `Due ${new Date(task.dueAt).toLocaleDateString()}`,
+        meta: `Due ${new Date(task.dueDate).toLocaleDateString()}`,
         status: task.status,
         href: ROUTES.tasks,
       }))
-  }, [db.drafts, db.tasks, role])
+  }, [db.drafts, tasks, role])
 
   if (!isReady || booting) {
     return <DashboardSkeleton />

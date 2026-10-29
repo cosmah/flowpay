@@ -1,18 +1,28 @@
 "use client"
 
+import Link from "next/link"
+import { ApprovedBadge } from "@/components/library/approved-badge"
+import { GraphicPreview } from "@/components/library/graphic-preview"
+import { LibraryActions } from "@/components/library/library-actions"
 import { EmptyState } from "@/components/shared/empty-state"
-import { useDb } from "@/hooks/use-db"
+import { Button } from "@/components/ui/button"
+import { useLibrary } from "@/hooks/use-library"
+import { ROUTES } from "@/lib/constants/routes"
 
 export function LibraryItemDetail({ itemId }: { itemId: string }) {
-  const { db } = useDb()
-  const item = db.library.find((row) => row.id === itemId)
-  const sends = db.testSends.filter((row) => row.libraryItemId === itemId)
+  const { getItem } = useLibrary()
+  const item = getItem(itemId)
 
   if (!item) {
     return (
       <EmptyState
         title="Asset not found"
-        description="Only approved library items from the seeded H2 data are available here."
+        description="Only approved library snapshots are available here."
+        action={
+          <Button asChild variant="outline">
+            <Link href={ROUTES.library}>Back to library</Link>
+          </Button>
+        }
       />
     )
   }
@@ -20,40 +30,36 @@ export function LibraryItemDetail({ itemId }: { itemId: string }) {
   return (
     <div className="space-y-6">
       <div className="rounded-2xl border border-border/70 bg-[var(--rx-paper)] px-5 py-5">
-        <p className="text-xs uppercase tracking-wide text-muted-foreground">
-          {item.format}
-        </p>
-        <h2 className="mt-1 font-heading text-xl text-[var(--rx-ink)]">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+            {item.type}
+          </p>
+          <ApprovedBadge />
+        </div>
+        <h2 className="mt-2 font-heading text-xl text-[var(--rx-ink)]">
           {item.title}
         </h2>
-        <pre className="mt-4 whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground">
-          {item.content}
-        </pre>
-      </div>
+        <p className="mt-2 text-sm text-muted-foreground">
+          {item.campaignName} · Approved by {item.approvedBy} ·{" "}
+          {new Date(item.approvedAt).toLocaleString()}
+        </p>
 
-      <section>
-        <h3 className="mb-3 font-heading text-lg text-[var(--rx-ink)]">
-          Test send log
-        </h3>
-        {sends.length === 0 ? (
-          <EmptyState
-            title="No test sends yet"
-            description="Simulated sends will log here as submitted — not delivered."
+        <div className="mt-4">
+          <LibraryActions item={item} />
+        </div>
+
+        {item.type === "graphic" ? (
+          <GraphicPreview
+            content={item.content}
+            title={item.title}
+            className="mt-6 overflow-hidden rounded-xl border border-border/60 [&_svg]:h-auto [&_svg]:w-full"
           />
         ) : (
-          <ul className="divide-y divide-border/70 overflow-hidden rounded-2xl border border-border/70 bg-[var(--rx-paper)]">
-            {sends.map((send) => (
-              <li key={send.id} className="px-5 py-4 text-sm">
-                <p className="font-medium text-foreground">{send.message}</p>
-                <p className="mt-1 text-muted-foreground">
-                  {send.mode} · {send.result} ·{" "}
-                  {new Date(send.createdAt).toLocaleString()}
-                </p>
-              </li>
-            ))}
-          </ul>
+          <pre className="mt-6 whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground">
+            {item.content}
+          </pre>
         )}
-      </section>
+      </div>
     </div>
   )
 }

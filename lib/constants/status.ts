@@ -15,10 +15,9 @@ export const CAMPAIGN_STATUS_LABELS: Record<CampaignStatus, string> = {
 }
 
 export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
-  open: "Open",
+  todo: "To do",
   in_progress: "In progress",
   done: "Done",
-  overdue: "Overdue",
 }
 
 /** Review tasks are due 24h after a draft is submitted (demo default). */
