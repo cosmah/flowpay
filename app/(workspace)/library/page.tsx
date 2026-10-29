@@ -1,5 +1,5 @@
 import { PageHeader } from "@/components/layout/page-header"
-import { EmptyState } from "@/components/shared/empty-state"
+import { LibraryList } from "@/components/library/library-list"
 
 export default function LibraryPage() {
   return (
@@ -8,10 +8,7 @@ export default function LibraryPage() {
         title="Library"
         description="Approved items only. Search, copy, download, or run a simulated test send."
       />
-      <EmptyState
-        title="No approved assets"
-        description="Drafts never appear here. Once a reviewer approves content, it shows up for export and test send."
-      />
+      <LibraryList />
     </div>
   )
 }

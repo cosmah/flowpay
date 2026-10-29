@@ -1,5 +1,5 @@
 import { PageHeader } from "@/components/layout/page-header"
-import { EmptyState } from "@/components/shared/empty-state"
+import { ReviewQueue } from "@/components/review/review-queue"
 
 export default function ReviewPage() {
   return (
@@ -8,10 +8,7 @@ export default function ReviewPage() {
         title="Review queue"
         description="Pending drafts waiting for approve or changes requested. Comments and history stay visible."
       />
-      <EmptyState
-        title="Queue is empty"
-        description="Switch to the Reviewer role when drafts are submitted. Approvals publish items into the library."
-      />
+      <ReviewQueue />
     </div>
   )
 }

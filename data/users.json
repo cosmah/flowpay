@@ -1,0 +1,18 @@
+[
+  {
+    "id": "user_marketer",
+    "name": "Amina Okello",
+    "email": "marketer@flowpay.dev",
+    "password": "Flowpay123!",
+    "role": "marketer",
+    "createdAt": "2026-10-01T08:00:00.000Z"
+  },
+  {
+    "id": "user_reviewer",
+    "name": "Jordan Mensah",
+    "email": "reviewer@flowpay.dev",
+    "password": "Flowpay123!",
+    "role": "reviewer",
+    "createdAt": "2026-10-01T08:05:00.000Z"
+  }
+]

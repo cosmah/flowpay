@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { Figtree, Syne } from "next/font/google"
+import { AppProviders } from "@/components/providers/app-providers"
 import "./globals.css"
 
 const figtree = Figtree({
@@ -14,11 +15,11 @@ const syne = Syne({
 
 export const metadata: Metadata = {
   title: {
-    default: "Relworx",
-    template: "%s · Relworx",
+    default: "FlowPay",
+    template: "%s · FlowPay",
   },
   description:
-    "Marketing content and workflow management — from brief to approved library assets.",
+    "FlowPay — marketing content and workflow management from brief to approved library assets.",
 }
 
 export default function RootLayout({
@@ -31,7 +32,9 @@ export default function RootLayout({
       lang="en"
       className={`${figtree.variable} ${syne.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col font-sans">{children}</body>
+      <body className="flex min-h-full flex-col font-sans">
+        <AppProviders>{children}</AppProviders>
+      </body>
     </html>
   )
 }

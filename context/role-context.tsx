@@ -4,10 +4,12 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from "react"
+import { useAuth } from "@/hooks/use-auth"
 import type { UserRole } from "@/types"
 
 interface RoleContextValue {
@@ -20,7 +22,14 @@ interface RoleContextValue {
 const RoleContext = createContext<RoleContextValue | null>(null)
 
 export function RoleProvider({ children }: { children: ReactNode }) {
+  const { user, isReady } = useAuth()
   const [role, setRoleState] = useState<UserRole>("marketer")
+
+  useEffect(() => {
+    if (isReady && user?.role) {
+      setRoleState(user.role)
+    }
+  }, [isReady, user?.role])
 
   const setRole = useCallback((next: UserRole) => {
     setRoleState(next)

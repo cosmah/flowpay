@@ -1,5 +1,5 @@
 import { PageHeader } from "@/components/layout/page-header"
-import { EmptyState } from "@/components/shared/empty-state"
+import { TaskList } from "@/components/tasks/task-list"
 
 export default function TasksPage() {
   return (
@@ -8,10 +8,7 @@ export default function TasksPage() {
         title="Tasks"
         description="Review tasks show owner, due date, and status. Submitting a draft auto-creates a task due in 24 hours."
       />
-      <EmptyState
-        title="No open tasks"
-        description="When a marketer submits a draft, a reviewer task appears here automatically."
-      />
+      <TaskList />
     </div>
   )
 }

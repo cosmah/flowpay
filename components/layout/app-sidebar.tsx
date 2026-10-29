@@ -18,7 +18,7 @@ export function AppSidebar() {
     <aside className="flex w-56 shrink-0 flex-col border-r border-border/70 bg-[var(--rx-paper)]">
       <div className="border-b border-border/70 px-5 py-5">
         <Link href="/" className="font-heading text-xl tracking-tight text-[var(--rx-ink)]">
-          Relworx
+          FlowPay
         </Link>
         <p className="mt-1 text-xs text-muted-foreground">Workspace</p>
       </div>
