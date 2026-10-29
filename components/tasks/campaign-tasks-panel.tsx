@@ -18,7 +18,9 @@ import {
 import { StatusBadge } from "@/components/shared/status-badge"
 import { AddTaskForm } from "@/components/tasks/add-task-form"
 import { useTasks } from "@/hooks/use-tasks"
+import { useTeam } from "@/hooks/use-team"
 import type { TaskStatus } from "@/types"
+import { taskOwnerLabel } from "@/types"
 
 type SortKey = "due_asc" | "due_desc" | "title_asc" | "status"
 
@@ -30,6 +32,7 @@ export function CampaignTasksPanel({
   campaignTitle: string
 }) {
   const { getTasksByCampaign, updateTask } = useTasks()
+  const { members } = useTeam()
   const tasks = getTasksByCampaign(campaignId)
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState("")
@@ -41,7 +44,10 @@ export function CampaignTasksPanel({
     let rows = tasks.filter((task) => {
       if (statusFilter !== "all" && task.status !== statusFilter) return false
       if (!needle) return true
-      return `${task.title} ${task.owner}`.toLowerCase().includes(needle)
+      const owner = taskOwnerLabel(task.owner, members)
+      return `${task.title} ${owner} ${task.owner}`
+        .toLowerCase()
+        .includes(needle)
     })
 
     rows = [...rows].sort((a, b) => {
@@ -58,7 +64,7 @@ export function CampaignTasksPanel({
       }
     })
     return rows
-  }, [tasks, query, statusFilter, sort])
+  }, [tasks, query, statusFilter, sort, members])
 
   return (
     <section className="space-y-4">
@@ -141,7 +147,7 @@ export function CampaignTasksPanel({
                   ) : null}
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Owner: {task.owner} · Due{" "}
+                  Owner: {taskOwnerLabel(task.owner, members)} · Due{" "}
                   {new Date(task.dueDate).toLocaleString()}
                 </p>
               </div>

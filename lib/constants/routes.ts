@@ -20,6 +20,7 @@ export const ROUTES = {
   tasksOwner: (owner: string) =>
     `/tasks?owner=${encodeURIComponent(owner)}` as const,
   review: "/review",
+  reviewDraft: (id: string) => `/review/${id}` as const,
   library: "/library",
   libraryItem: (id: string) => `/library/${id}` as const,
   team: "/team",

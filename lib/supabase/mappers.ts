@@ -87,7 +87,10 @@ const CONTENT_TYPE: Record<DraftFormat, "social_caption" | "email" | "graphic"> 
     visual: "graphic",
   }
 
-export function draftFromContentItem(row: Tables<"content_items">): Draft {
+export function draftFromContentItem(
+  row: Tables<"content_items">,
+  reviews: Tables<"reviews">[] = []
+): Draft {
   return {
     id: row.id,
     campaignId: row.campaign_id,
@@ -95,7 +98,14 @@ export function draftFromContentItem(row: Tables<"content_items">): Draft {
     content: row.body,
     status: row.status,
     generationSource: "template",
-    reviewComments: [],
+    reviewComments: reviews
+      .filter((review) => review.content_item_id === row.id && review.feedback)
+      .map((review) => ({
+        id: review.id,
+        authorRole: "reviewer" as const,
+        body: review.feedback ?? "",
+        createdAt: review.created_at,
+      })),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }

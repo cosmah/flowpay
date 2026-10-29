@@ -24,6 +24,7 @@ import { useTasks } from "@/hooks/use-tasks"
 import { useTeam } from "@/hooks/use-team"
 import { ROUTES } from "@/lib/constants/routes"
 import type { TaskStatus, TaskWithMeta } from "@/types"
+import { taskOwnerLabel, taskOwnerMatches } from "@/types"
 import { cn } from "@/lib/utils"
 
 const COLUMNS: { id: TaskStatus; title: string; hint: string }[] = [
@@ -52,14 +53,22 @@ export function TaskBoard() {
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase()
     return tasks.filter((task) => {
-      if (ownerFilter !== "all" && task.owner !== ownerFilter) return false
+      if (ownerFilter !== "all") {
+        const selected = members.find((member) => member.email === ownerFilter)
+        if (selected) {
+          if (!taskOwnerMatches(task.owner, selected)) return false
+        } else if (task.owner !== ownerFilter) {
+          return false
+        }
+      }
       if (!needle) return true
       const campaign = campaignTitles.get(task.campaignId) ?? task.campaignId
-      return `${task.title} ${task.owner} ${campaign}`
+      const owner = taskOwnerLabel(task.owner, members)
+      return `${task.title} ${owner} ${task.owner} ${campaign}`
         .toLowerCase()
         .includes(needle)
     })
-  }, [tasks, ownerFilter, query, campaignTitles])
+  }, [tasks, ownerFilter, query, campaignTitles, members])
 
   const byColumn = useMemo(() => {
     const groups: Record<TaskStatus, TaskWithMeta[]> = {
@@ -117,7 +126,7 @@ export function TaskBoard() {
           >
             <option value="all">All owners</option>
             {members.map((member) => (
-              <option key={member.id} value={member.name}>
+              <option key={member.id} value={member.email}>
                 {member.name}
               </option>
             ))}
@@ -200,7 +209,7 @@ export function TaskBoard() {
                       </p>
                       <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                         <span className="text-xs capitalize text-muted-foreground">
-                          {task.owner}
+                          {taskOwnerLabel(task.owner, members)}
                         </span>
                         <StatusBadge status={task.status} />
                       </div>

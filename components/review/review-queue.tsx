@@ -1,10 +1,9 @@
 "use client"
 
+import Link from "next/link"
 import { useMemo, useState } from "react"
-import { toast } from "sonner"
+import { GraphicPreview } from "@/components/library/graphic-preview"
 import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { EmptyState } from "@/components/shared/empty-state"
 import {
   ListToolbar,
@@ -13,24 +12,20 @@ import {
 import { StatusBadge } from "@/components/shared/status-badge"
 import { useDb } from "@/hooks/use-db"
 import { useRole } from "@/hooks/use-role"
-import { useTasks } from "@/hooks/use-tasks"
-import { useTeam } from "@/hooks/use-team"
-import { handleClientError } from "@/lib/errors"
-import type { Draft, DraftFormat } from "@/types"
+import { ROUTES } from "@/lib/constants/routes"
+import type { DraftFormat } from "@/types"
+import { cn } from "@/lib/utils"
 
 type SortKey = "updated_desc" | "updated_asc" | "format" | "campaign"
 
 export function ReviewQueue() {
   const { canReview } = useRole()
-  const { currentUser, getMarketers } = useTeam()
-  const { db, approveDraft, requestDraftChanges } = useDb()
-  const { handleDraftApproved, handleChangesRequested } = useTasks()
+  const { db } = useDb()
   const pending = db.drafts.filter((d) => d.status === "in_review")
 
   const [query, setQuery] = useState("")
   const [formatFilter, setFormatFilter] = useState<"all" | DraftFormat>("all")
   const [sort, setSort] = useState<SortKey>("updated_desc")
-  const [comments, setComments] = useState<Record<string, string>>({})
 
   const campaignTitles = useMemo(() => {
     const map = new Map<string, string>()
@@ -73,70 +68,11 @@ export function ReviewQueue() {
     return rows
   }, [pending, query, formatFilter, sort, campaignTitles])
 
-  async function onApprove(draft: Draft) {
-    try {
-      const updated = await approveDraft(draft.id, currentUser.email)
-      if (!updated) {
-        toast.error("Could not approve this draft.")
-        return
-      }
-      const campaign = db.campaigns.find((c) => c.id === updated.campaignId)
-      handleDraftApproved(updated, {
-        items: [],
-        addItem: (item) => ({
-          id: item.id ?? `lib_${crypto.randomUUID().slice(0, 8)}`,
-          campaignId: item.campaignId,
-          campaignName: item.campaignName,
-          draftId: item.draftId,
-          type: item.type,
-          title: item.title,
-          content: item.content,
-          approvedBy: item.approvedBy,
-          approvedAt: item.approvedAt,
-          tags: item.tags,
-        }),
-        campaignName: campaign?.brief.title ?? "Unknown campaign",
-        reviewer: currentUser.name,
-      })
-      toast.success("Draft approved.")
-    } catch (error) {
-      handleClientError(error)
-    }
-  }
-
-  async function onRequestChanges(draft: Draft) {
-    const body = (comments[draft.id] ?? "").trim()
-    if (!body) {
-      toast.error("Add a comment for the marketer.")
-      return
-    }
-
-    try {
-      const updated = await requestDraftChanges(
-        draft.id,
-        body,
-        currentUser.email
-      )
-      if (!updated) {
-        toast.error("Could not request changes.")
-        return
-      }
-      const fallbackAuthor = getMarketers()[0]?.name ?? "marketer"
-      handleChangesRequested(updated, {
-        authorName: updated.authorName ?? fallbackAuthor,
-      })
-      setComments((prev) => ({ ...prev, [draft.id]: "" }))
-      toast.success("Changes requested.")
-    } catch (error) {
-      handleClientError(error)
-    }
-  }
-
   if (!canReview) {
     return (
       <EmptyState
         title="Reviewer role required"
-        description="Switch to a reviewer in the header to approve drafts or request changes."
+        description="Sign in with a reviewer or admin account to approve drafts or request changes."
       />
     )
   }
@@ -195,55 +131,43 @@ export function ReviewQueue() {
       ) : (
         <ul className="divide-y divide-border/70 overflow-hidden rounded-2xl border border-border/70 bg-[var(--rx-paper)]">
           {filtered.map((draft) => (
-            <li key={draft.id} className="space-y-4 px-5 py-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div className="min-w-0">
+            <li key={draft.id}>
+              <Link
+                href={ROUTES.reviewDraft(draft.id)}
+                className="flex flex-col gap-3 px-5 py-4 transition-colors hover:bg-muted/40 sm:flex-row sm:items-start sm:justify-between"
+              >
+                <div className="min-w-0 flex-1">
                   <p className="font-heading text-base capitalize text-[var(--rx-ink)]">
                     {draft.format} draft
                   </p>
-                  <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                    {draft.content}
-                  </p>
+                  {draft.format === "visual" ? (
+                    <GraphicPreview
+                      content={draft.content}
+                      title={
+                        campaignTitles.get(draft.campaignId) ?? "Visual draft"
+                      }
+                      className={cn(
+                        "mt-3 max-w-xs overflow-hidden rounded-xl border border-border/60",
+                        "[&_svg]:h-auto [&_svg]:w-full"
+                      )}
+                    />
+                  ) : (
+                    <p className="mt-1 line-clamp-2 whitespace-pre-wrap text-sm text-muted-foreground">
+                      {draft.content}
+                    </p>
+                  )}
                   <p className="mt-2 text-xs text-muted-foreground">
                     {campaignTitles.get(draft.campaignId) ?? draft.campaignId}
-                    {draft.authorName ? ` · by ${draft.authorName}` : ""} · via{" "}
-                    {draft.generationSource}
+                    {draft.authorName ? ` · by ${draft.authorName}` : ""}
                   </p>
                 </div>
-                <StatusBadge status={draft.status} />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor={`change-${draft.id}`}>
-                  Request changes comment
-                </Label>
-                <Textarea
-                  id={`change-${draft.id}`}
-                  value={comments[draft.id] ?? ""}
-                  onChange={(e) =>
-                    setComments((prev) => ({
-                      ...prev,
-                      [draft.id]: e.target.value,
-                    }))
-                  }
-                  placeholder="What should the marketer change?"
-                  rows={3}
-                />
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                <Button type="button" size="sm" onClick={() => onApprove(draft)}>
-                  Approve
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() => onRequestChanges(draft)}
-                >
-                  Request changes
-                </Button>
-              </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <StatusBadge status={draft.status} />
+                  <span className="text-xs font-medium text-[var(--rx-lagoon)]">
+                    Review
+                  </span>
+                </div>
+              </Link>
             </li>
           ))}
         </ul>

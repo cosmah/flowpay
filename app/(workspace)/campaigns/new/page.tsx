@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import { CampaignCreateForm } from "@/components/campaigns/campaign-create-form"
-import { CampaignCreateHero } from "@/components/campaigns/campaign-create-hero"
+import { PageHeader } from "@/components/layout/page-header"
 
 export const metadata: Metadata = {
   title: "New campaign",
@@ -8,8 +8,11 @@ export const metadata: Metadata = {
 
 export default function NewCampaignPage() {
   return (
-    <div className="mx-auto max-w-3xl">
-      <CampaignCreateHero />
+    <div className="w-full">
+      <PageHeader
+        title="New campaign"
+        description="Fill in the brief, validate required fields, and save to start drafts."
+      />
       <CampaignCreateForm />
     </div>
   )

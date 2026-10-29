@@ -25,6 +25,7 @@ import { useTasks } from "@/hooks/use-tasks"
 import { useTeam } from "@/hooks/use-team"
 import { ROUTES } from "@/lib/constants/routes"
 import type { TaskStatus } from "@/types"
+import { taskOwnerLabel, taskOwnerMatches } from "@/types"
 
 type SortKey =
   | "due_asc"
@@ -48,8 +49,12 @@ export function TaskList() {
 
   useEffect(() => {
     if (!ownerFromUrl) return
-    const match = members.find((member) => member.name === ownerFromUrl)
-    setOwnerFilter(match?.name ?? ownerFromUrl)
+    const match = members.find(
+      (member) =>
+        member.name === ownerFromUrl ||
+        member.email.toLowerCase() === ownerFromUrl.toLowerCase()
+    )
+    setOwnerFilter(match?.email ?? ownerFromUrl)
   }, [ownerFromUrl, members])
 
   const campaignTitles = useMemo(() => {
@@ -61,10 +66,7 @@ export function TaskList() {
   }, [db.campaigns])
 
   const owners = useMemo(
-    () =>
-      members
-        .filter((member) => member.status === "active")
-        .map((member) => member.name),
+    () => members.filter((member) => member.status === "active"),
     [members]
   )
 
@@ -72,11 +74,19 @@ export function TaskList() {
     const needle = query.trim().toLowerCase()
 
     let rows = tasks.filter((task) => {
-      if (ownerFilter !== "all" && task.owner !== ownerFilter) return false
+      if (ownerFilter !== "all") {
+        const selected = members.find((member) => member.email === ownerFilter)
+        if (selected) {
+          if (!taskOwnerMatches(task.owner, selected)) return false
+        } else if (task.owner !== ownerFilter) {
+          return false
+        }
+      }
       if (statusFilter !== "all" && task.status !== statusFilter) return false
       if (!needle) return true
       const campaign = campaignTitles.get(task.campaignId) ?? task.campaignId
-      return `${task.title} ${task.owner} ${campaign}`
+      const owner = taskOwnerLabel(task.owner, members)
+      return `${task.title} ${owner} ${task.owner} ${campaign}`
         .toLowerCase()
         .includes(needle)
     })
@@ -90,7 +100,9 @@ export function TaskList() {
         case "status":
           return a.status.localeCompare(b.status)
         case "owner":
-          return a.owner.localeCompare(b.owner)
+          return taskOwnerLabel(a.owner, members).localeCompare(
+            taskOwnerLabel(b.owner, members)
+          )
         case "due_desc":
           return new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime()
         case "due_asc":
@@ -100,7 +112,7 @@ export function TaskList() {
     })
 
     return rows
-  }, [tasks, ownerFilter, statusFilter, query, sort, campaignTitles])
+  }, [tasks, ownerFilter, statusFilter, query, sort, campaignTitles, members])
 
   const campaignOptions = db.campaigns.map((campaign) => ({
     id: campaign.id,
@@ -142,8 +154,8 @@ export function TaskList() {
             >
               <option value="all">All owners</option>
               {owners.map((owner) => (
-                <option key={owner} value={owner}>
-                  {owner}
+                <option key={owner.id} value={owner.email}>
+                  {owner.name}
                 </option>
               ))}
             </select>
@@ -227,7 +239,9 @@ export function TaskList() {
                   <td className="px-4 py-3 text-muted-foreground">
                     {campaignTitles.get(task.campaignId) ?? task.campaignId}
                   </td>
-                  <td className="px-4 py-3 capitalize">{task.owner}</td>
+                  <td className="px-4 py-3 capitalize">
+                    {taskOwnerLabel(task.owner, members)}
+                  </td>
                   <td className="px-4 py-3 text-muted-foreground">
                     {new Date(task.dueDate).toLocaleString()}
                   </td>

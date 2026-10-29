@@ -6,15 +6,14 @@ import {
   Flag,
   FolderKanban,
   Gauge,
-  Megaphone,
   MessageSquareText,
   MousePointerClick,
   Package,
   Radio,
+  SlidersHorizontal,
   Target,
   Type,
   Users,
-  Zap,
 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -91,7 +90,7 @@ function FieldShell({
         htmlFor={htmlFor}
         className="flex items-center gap-2 text-sm font-medium"
       >
-        <span className="flex size-7 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+        <span className="flex size-7 shrink-0 items-center justify-center rounded-md border border-border/70 bg-muted/40 text-muted-foreground">
           {icon}
         </span>
         {label}
@@ -188,9 +187,7 @@ export function CampaignForm({
     if (submitting) return
 
     setFields({})
-    const toneWithVoice = values.tone.trim()
-      ? values.tone
-      : ambitionLabel
+    const toneWithVoice = values.tone.trim() ? values.tone : ambitionLabel
 
     const result = sanitizeBriefInput({
       ...values,
@@ -227,39 +224,21 @@ export function CampaignForm({
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      noValidate
-      className={cn(
-        "space-y-8",
-        !compact &&
-          "rounded-3xl border border-border/70 bg-[var(--rx-paper)] p-5 sm:p-8"
-      )}
-    >
-      {!compact ? (
-        <div className="flex flex-col gap-3 border-b border-border/60 pb-6 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
-              Brief essentials
-            </p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Required fields are validated before the campaign is saved.
-            </p>
-          </div>
-          <p className="text-sm font-medium text-[var(--rx-ink)]">
-            {filledCount}/8 ready
-          </p>
-        </div>
-      ) : (
+    <form onSubmit={handleSubmit} noValidate className="w-full space-y-6">
+      <div className="flex w-full items-center justify-between gap-3 border-b border-border/60 pb-3">
         <p className="text-sm text-muted-foreground">
-          Capture objective, audience, offer, channel, tone, and the action you
-          want customers to take.
+          {compact
+            ? "Capture the brief essentials."
+            : "Required fields are validated before save."}
         </p>
-      )}
+        <p className="shrink-0 text-sm font-medium tabular-nums text-[var(--rx-ink)]">
+          {filledCount}/8 ready
+        </p>
+      </div>
 
-      <div className="grid gap-6 sm:grid-cols-2">
+      <div className="grid w-full grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-12 xl:gap-x-6 xl:gap-y-5">
         <FieldShell
-          className="sm:col-span-2"
+          className="xl:col-span-4"
           icon={<FolderKanban className="size-3.5" aria-hidden />}
           label="Project"
           htmlFor="projectId"
@@ -283,7 +262,7 @@ export function CampaignForm({
         </FieldShell>
 
         <FieldShell
-          className="sm:col-span-2"
+          className="xl:col-span-8"
           icon={<Type className="size-3.5" aria-hidden />}
           label="Campaign title"
           htmlFor="title"
@@ -300,7 +279,7 @@ export function CampaignForm({
         </FieldShell>
 
         <FieldShell
-          className="sm:col-span-2"
+          className="xl:col-span-12"
           icon={<Target className="size-3.5" aria-hidden />}
           label="Objective"
           htmlFor="objective"
@@ -312,12 +291,13 @@ export function CampaignForm({
             value={values.objective}
             aria-invalid={Boolean(fields.objective)}
             placeholder="Drive qualified demos from product marketers in the next quarter."
-            className="min-h-24"
+            className="min-h-28"
             onChange={(event) => update("objective", event.target.value)}
           />
         </FieldShell>
 
         <FieldShell
+          className="xl:col-span-4"
           icon={<Users className="size-3.5" aria-hidden />}
           label="Audience"
           htmlFor="audience"
@@ -334,6 +314,7 @@ export function CampaignForm({
         </FieldShell>
 
         <FieldShell
+          className="xl:col-span-4"
           icon={<Package className="size-3.5" aria-hidden />}
           label="Service or product"
           htmlFor="productService"
@@ -350,11 +331,12 @@ export function CampaignForm({
         </FieldShell>
 
         <FieldShell
+          className="xl:col-span-4"
           icon={<MessageSquareText className="size-3.5" aria-hidden />}
           label="Tone"
           htmlFor="tone"
           error={fields.tone}
-          hint={`Creative voice leans ${ambitionLabel.toLowerCase()}.`}
+          hint={`Voice leans ${ambitionLabel.toLowerCase()} when empty.`}
         >
           <Input
             id="tone"
@@ -367,6 +349,7 @@ export function CampaignForm({
         </FieldShell>
 
         <FieldShell
+          className="xl:col-span-4"
           icon={<MousePointerClick className="size-3.5" aria-hidden />}
           label="Desired customer action"
           htmlFor="customerAction"
@@ -383,6 +366,7 @@ export function CampaignForm({
         </FieldShell>
 
         <FieldShell
+          className="xl:col-span-4"
           icon={<CalendarDays className="size-3.5" aria-hidden />}
           label="Deadline"
           htmlFor="deadline"
@@ -402,6 +386,7 @@ export function CampaignForm({
         </FieldShell>
 
         <FieldShell
+          className="xl:col-span-4"
           icon={<Flag className="size-3.5" aria-hidden />}
           label="Status"
           htmlFor="status"
@@ -423,11 +408,11 @@ export function CampaignForm({
         </FieldShell>
 
         <FieldShell
-          className="sm:col-span-2"
+          className="xl:col-span-12"
           icon={<Radio className="size-3.5" aria-hidden />}
           label="Channels"
           error={fields.channels}
-          hint="Select at least one channel for this brief."
+          hint="Select at least one channel."
         >
           <div className="flex flex-wrap gap-2">
             {CAMPAIGN_CHANNELS.map((channel) => {
@@ -438,7 +423,7 @@ export function CampaignForm({
                   type="button"
                   onClick={() => toggleChannel(channel)}
                   className={cn(
-                    "rounded-full border px-3 py-1.5 text-xs font-medium capitalize transition-colors",
+                    "rounded-md border px-3 py-1.5 text-xs font-medium capitalize transition-colors",
                     active
                       ? "border-[var(--rx-ink)] bg-[var(--rx-ink)] text-[var(--rx-paper)]"
                       : "border-border text-muted-foreground hover:bg-muted"
@@ -454,11 +439,12 @@ export function CampaignForm({
         {!compact ? (
           <>
             <FieldShell
+              className="xl:col-span-6"
               icon={<Gauge className="size-3.5" aria-hidden />}
               label={`Priority · ${priorityLabel}`}
-              hint="High priority asks for a deadline before save."
+              hint="High priority requires a deadline."
             >
-              <div className="rounded-xl border border-border/70 bg-muted/30 px-4 py-4">
+              <div className="border border-border/70 bg-muted/20 px-4 py-4">
                 <Slider
                   min={1}
                   max={5}
@@ -475,11 +461,12 @@ export function CampaignForm({
             </FieldShell>
 
             <FieldShell
-              icon={<Zap className="size-3.5" aria-hidden />}
+              className="xl:col-span-6"
+              icon={<SlidersHorizontal className="size-3.5" aria-hidden />}
               label={`Creative ambition · ${ambitionLabel}`}
-              hint="Guides tone when the tone field is empty."
+              hint="Used as tone when the tone field is empty."
             >
-              <div className="rounded-xl border border-border/70 bg-muted/30 px-4 py-4">
+              <div className="border border-border/70 bg-muted/20 px-4 py-4">
                 <Slider
                   min={1}
                   max={5}
@@ -494,34 +481,17 @@ export function CampaignForm({
                 </div>
               </div>
             </FieldShell>
-
-            <div className="sm:col-span-2 rounded-2xl border border-dashed border-border/80 bg-muted/20 px-4 py-4">
-              <p className="flex items-center gap-2 text-sm font-medium text-[var(--rx-ink)]">
-                <Megaphone className="size-4" aria-hidden />
-                Brief snapshot
-              </p>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                {values.title.trim() || "Untitled campaign"} for{" "}
-                {values.audience.trim() || "your audience"} —{" "}
-                {values.customerAction.trim() || "define the action"} via{" "}
-                {values.channels.length
-                  ? values.channels.join(", ")
-                  : "selected channels"}
-                . Priority {priorityLabel.toLowerCase()}, voice{" "}
-                {ambitionLabel.toLowerCase()}.
-              </p>
-            </div>
           </>
         ) : null}
       </div>
 
       {fields.form ? (
-        <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <p className="bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {fields.form}
         </p>
       ) : null}
 
-      <div className="flex flex-wrap items-center gap-2 border-t border-border/60 pt-5">
+      <div className="flex flex-wrap items-center gap-2 border-t border-border/60 pt-4">
         <Button type="submit" disabled={submitting} className="h-10 min-w-36">
           {submitting
             ? mode === "create"

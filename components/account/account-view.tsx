@@ -16,7 +16,7 @@ import { useAuth } from "@/hooks/use-auth"
 import { useTasks } from "@/hooks/use-tasks"
 import { useTeam } from "@/hooks/use-team"
 import { ROUTES } from "@/lib/constants/routes"
-import { ROLE_LABELS } from "@/types"
+import { ROLE_LABELS, taskOwnerMatches } from "@/types"
 
 export function AccountView() {
   const { user, logout, isAuthenticated } = useAuth()
@@ -24,10 +24,11 @@ export function AccountView() {
   const { tasks } = useTasks()
 
   const openTasks = tasks.filter(
-    (task) => task.owner === currentUser.name && task.status !== "done"
+    (task) =>
+      taskOwnerMatches(task.owner, currentUser) && task.status !== "done"
   ).length
   const overdueTasks = tasks.filter(
-    (task) => task.owner === currentUser.name && task.isOverdue
+    (task) => taskOwnerMatches(task.owner, currentUser) && task.isOverdue
   ).length
 
   function onLogout() {

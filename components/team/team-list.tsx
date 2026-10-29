@@ -19,7 +19,7 @@ import { useRole } from "@/hooks/use-role"
 import { useTasks } from "@/hooks/use-tasks"
 import { useTeam } from "@/hooks/use-team"
 import { ROUTES } from "@/lib/constants/routes"
-import { ROLE_LABELS } from "@/types"
+import { ROLE_LABELS, taskOwnerMatches } from "@/types"
 import { cn } from "@/lib/utils"
 
 export function TeamList() {
@@ -37,7 +37,7 @@ export function TeamList() {
 
   const rows = useMemo(() => {
     return members.map((member) => {
-      const owned = tasks.filter((task) => task.owner === member.name)
+      const owned = tasks.filter((task) => taskOwnerMatches(task.owner, member))
       const open = owned.filter((task) => task.status !== "done").length
       const overdue = owned.filter((task) => task.isOverdue).length
       const activity =

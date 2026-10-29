@@ -28,7 +28,7 @@ export function WorkspaceChrome({ children }: { children: ReactNode }) {
             <UserMenu />
           </div>
         </header>
-        <main className="flex flex-1 flex-col gap-4 px-4 py-6 sm:px-6 md:px-8">
+        <main className="flex w-full flex-1 flex-col gap-4 px-3 py-4 sm:px-4">
           <ErrorBoundary title="This view failed to load">{children}</ErrorBoundary>
         </main>
       </SidebarInset>

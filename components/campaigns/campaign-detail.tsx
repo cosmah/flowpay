@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { GraphicPreview } from "@/components/library/graphic-preview"
 import { Button } from "@/components/ui/button"
 import { CampaignTasksPanel } from "@/components/tasks/campaign-tasks-panel"
 import { EmptyState } from "@/components/shared/empty-state"
@@ -18,7 +19,7 @@ import type { Draft } from "@/types"
 export function CampaignDetail({ campaignId }: { campaignId: string }) {
   const router = useRouter()
   const { canMarket: isMarketer } = useRole()
-  const { currentUser, getReviewer } = useTeam()
+  const { getReviewer } = useTeam()
   const { db, deleteCampaign, submitDraft } = useDb()
   const { handleDraftSubmitted } = useTasks()
   const campaign = db.campaigns.find((c) => c.id === campaignId)
@@ -59,13 +60,14 @@ export function CampaignDetail({ campaignId }: { campaignId: string }) {
 
   async function onSubmitDraft(draft: Draft) {
     try {
-      const updated = await submitDraft(draft.id, currentUser.email)
+      const reviewer = getReviewer()
+      const updated = await submitDraft(draft.id, reviewer.email)
       if (!updated) {
         toast.error("This draft cannot be submitted.")
         return
       }
       handleDraftSubmitted(updated, {
-        reviewerName: getReviewer().name,
+        reviewerName: reviewer.name,
       })
       toast.success("Draft submitted for review.")
     } catch (error) {
@@ -109,8 +111,8 @@ export function CampaignDetail({ campaignId }: { campaignId: string }) {
         <h3 className="font-heading text-lg text-[var(--rx-ink)]">
           Campaign brief
         </h3>
-        <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2">
-          <div className="sm:col-span-2">
+        <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2 xl:grid-cols-3">
+          <div className="sm:col-span-2 xl:col-span-3">
             <dt className="text-muted-foreground">Objective</dt>
             <dd className="mt-1 text-foreground">{campaign.brief.objective}</dd>
           </div>
@@ -172,35 +174,61 @@ export function CampaignDetail({ campaignId }: { campaignId: string }) {
                 isMarketer &&
                 (draft.status === "draft" ||
                   draft.status === "changes_requested")
+              const latestFeedback = draft.reviewComments.at(-1)
 
               return (
-                <li
-                  key={draft.id}
-                  className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-start sm:justify-between"
-                >
-                  <div className="min-w-0">
-                    <p className="font-heading capitalize text-[var(--rx-ink)]">
-                      {draft.format}
-                      <span className="ml-2 text-xs font-normal text-muted-foreground">
-                        via {draft.generationSource}
-                      </span>
-                    </p>
-                    <p className="mt-1 line-clamp-3 text-sm text-muted-foreground">
-                      {draft.content}
-                    </p>
+                <li key={draft.id} className="space-y-3 px-5 py-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="font-heading capitalize text-[var(--rx-ink)]">
+                        {draft.format}
+                        <span className="ml-2 text-xs font-normal text-muted-foreground">
+                          via {draft.generationSource}
+                        </span>
+                      </p>
+                      {draft.format === "visual" ? (
+                        <GraphicPreview
+                          content={draft.content}
+                          title={`${draft.format} draft`}
+                          className="mt-3 max-w-md overflow-hidden rounded-xl border border-border/60 [&_svg]:h-auto [&_svg]:w-full"
+                        />
+                      ) : (
+                        <p className="mt-1 line-clamp-3 text-sm text-muted-foreground">
+                          {draft.content}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <StatusBadge status={draft.status} />
+                      {canSubmit ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => onSubmitDraft(draft)}
+                        >
+                          Submit for review
+                        </Button>
+                      ) : null}
+                      {draft.status === "in_review" ? (
+                        <Button asChild size="sm" variant="outline">
+                          <Link href={ROUTES.reviewDraft(draft.id)}>
+                            Open review
+                          </Link>
+                        </Button>
+                      ) : null}
+                    </div>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <StatusBadge status={draft.status} />
-                    {canSubmit ? (
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={() => onSubmitDraft(draft)}
-                      >
-                        Submit for review
-                      </Button>
-                    ) : null}
-                  </div>
+                  {latestFeedback ? (
+                    <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-sm">
+                      <p className="text-xs font-medium uppercase tracking-wide text-amber-800 dark:text-amber-200">
+                        Reviewer feedback
+                      </p>
+                      <p className="mt-1 text-foreground">{latestFeedback.body}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {new Date(latestFeedback.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                  ) : null}
                 </li>
               )
             })}

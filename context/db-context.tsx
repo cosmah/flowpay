@@ -140,6 +140,7 @@ export function DbProvider({ children }: { children: ReactNode }) {
       projectsRes,
       campaignsRes,
       contentRes,
+      reviewsRes,
       tasksRes,
       libraryRes,
       sendsRes,
@@ -159,6 +160,11 @@ export function DbProvider({ children }: { children: ReactNode }) {
         .select("*")
         .eq("company_id", companyId)
         .order("updated_at", { ascending: false }),
+      supabase
+        .from("reviews")
+        .select("*")
+        .eq("company_id", companyId)
+        .order("created_at", { ascending: false }),
       supabase
         .from("tasks")
         .select("*")
@@ -180,11 +186,14 @@ export function DbProvider({ children }: { children: ReactNode }) {
     const campaignNameById = new Map(
       campaignRows.map((row) => [row.id, row.title] as const)
     )
+    const reviewRows = reviewsRes.data ?? []
 
     setDb({
       projects: (projectsRes.data ?? []).map(projectFromRow),
       campaigns: campaignRows.map(campaignFromRow),
-      drafts: (contentRes.data ?? []).map(draftFromContentItem),
+      drafts: (contentRes.data ?? []).map((row) =>
+        draftFromContentItem(row, reviewRows)
+      ),
       tasks: (tasksRes.data ?? []).map(taskFromRow),
       library: (libraryRes.data ?? []).map((row) =>
         libraryFromRow(row, campaignNameById.get(row.campaign_id) ?? "Campaign")
@@ -491,6 +500,8 @@ export function DbProvider({ children }: { children: ReactNode }) {
         .select("id")
         .eq("content_item_id", id)
         .in("status", ["pending", "in_progress", "blocked"])
+        .order("created_at", { ascending: false })
+        .limit(1)
         .maybeSingle()
 
       if (existingTask) {
