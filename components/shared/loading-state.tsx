@@ -1,7 +1,13 @@
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
-type LoadingVariant = "page" | "list" | "form" | "detail" | "inline"
+type LoadingVariant =
+  | "page"
+  | "list"
+  | "form"
+  | "detail"
+  | "inline"
+  | "dashboard"
 
 type LoadingStateProps = {
   variant?: LoadingVariant
@@ -90,6 +96,41 @@ function InlineSkeleton() {
   )
 }
 
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-8">
+      <div className="space-y-3">
+        <Skeleton className="h-8 w-56" />
+        <Skeleton className="h-4 w-full max-w-lg" />
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div
+            key={index}
+            className="rounded-2xl border border-border/70 bg-[var(--rx-paper)] p-5"
+          >
+            <Skeleton className="h-3 w-20" />
+            <Skeleton className="mt-4 h-8 w-16" />
+            <Skeleton className="mt-3 h-3 w-28" />
+          </div>
+        ))}
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="space-y-3">
+          <Skeleton className="h-5 w-36" />
+          <ListSkeleton rows={4} />
+        </div>
+        <div className="space-y-3">
+          <Skeleton className="h-5 w-40" />
+          <ListSkeleton rows={4} />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /**
  * Reusable loading UI built on shadcn Skeleton.
  * @see https://ui.shadcn.com/docs/components/base/skeleton
@@ -114,6 +155,7 @@ export function LoadingState({
       {variant === "form" ? <FormSkeleton /> : null}
       {variant === "detail" ? <DetailSkeleton /> : null}
       {variant === "inline" ? <InlineSkeleton /> : null}
+      {variant === "dashboard" ? <DashboardSkeleton /> : null}
     </div>
   )
 }

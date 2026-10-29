@@ -1,5 +1,5 @@
-import { LoadingState } from "@/components/shared"
+import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton"
 
 export default function WorkspaceLoading() {
-  return <LoadingState variant="page" label="Loading workspace" />
+  return <DashboardSkeleton />
 }

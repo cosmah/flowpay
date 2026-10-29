@@ -54,7 +54,7 @@ export function SiteHeader() {
                 size="sm"
                 className="bg-[var(--rx-signal)] text-[var(--rx-ink)] hover:bg-[var(--rx-signal)]/90"
               >
-                <Link href={ROUTES.campaigns}>Open workspace</Link>
+                <Link href={ROUTES.dashboard}>Open workspace</Link>
               </Button>
             </>
           ) : (
@@ -114,7 +114,7 @@ export function SiteHeader() {
                   className="bg-[var(--rx-signal)] text-[var(--rx-ink)] hover:bg-[var(--rx-signal)]/90"
                   onClick={() => setOpen(false)}
                 >
-                  <Link href={ROUTES.campaigns}>Open workspace</Link>
+                  <Link href={ROUTES.dashboard}>Open workspace</Link>
                 </Button>
                 <Button
                   variant="outline"

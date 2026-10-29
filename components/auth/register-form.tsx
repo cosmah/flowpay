@@ -46,7 +46,7 @@ export function RegisterForm() {
         setFields(result.fields ?? { form: result.message })
         return
       }
-      router.push(ROUTES.campaigns)
+      router.push(ROUTES.dashboard)
     } catch (error) {
       const message = handleClientError(error)
       setFields({ form: message })

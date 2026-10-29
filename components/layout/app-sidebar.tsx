@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { WORKSPACE_NAV } from "@/lib/constants/routes"
+import { ROUTES, WORKSPACE_NAV } from "@/lib/constants/routes"
 import { useRole } from "@/hooks/use-role"
 import { cn } from "@/lib/utils"
 
@@ -25,7 +25,9 @@ export function AppSidebar() {
       <nav className="flex flex-col gap-1 p-3">
         {items.map((item) => {
           const active =
-            pathname === item.href || pathname.startsWith(`${item.href}/`)
+            item.href === ROUTES.dashboard
+              ? pathname === ROUTES.dashboard
+              : pathname === item.href || pathname.startsWith(`${item.href}/`)
           return (
             <Link
               key={item.href}
