@@ -1,7 +1,6 @@
 "use client"
 
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { useState, type FormEvent } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,7 +16,6 @@ type Fields = Partial<
 >
 
 export function RegisterForm() {
-  const router = useRouter()
   const { register } = useAuth()
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
@@ -44,13 +42,14 @@ export function RegisterForm() {
       })
       if (!result.ok) {
         setFields(result.fields ?? { form: result.message })
+        setSubmitting(false)
         return
       }
-      router.push(ROUTES.dashboard)
+      window.location.assign(ROUTES.dashboard)
+      return
     } catch (error) {
       const message = handleClientError(error)
       setFields({ form: message })
-    } finally {
       setSubmitting(false)
     }
   }

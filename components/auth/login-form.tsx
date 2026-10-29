@@ -1,7 +1,6 @@
 "use client"
 
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { useState, type FormEvent } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,7 +13,6 @@ import { cn } from "@/lib/utils"
 type Fields = Partial<Record<"email" | "password" | "form", string>>
 
 export function LoginForm() {
-  const router = useRouter()
   const { login } = useAuth()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -32,13 +30,15 @@ export function LoginForm() {
       const result = await login({ email, password })
       if (!result.ok) {
         setFields(result.fields ?? { form: result.message })
+        setSubmitting(false)
         return
       }
-      router.push(ROUTES.dashboard)
+      // Hard navigate so login always lands on dashboard immediately.
+      window.location.assign(ROUTES.dashboard)
+      return
     } catch (error) {
       const message = handleClientError(error)
       setFields({ form: message })
-    } finally {
       setSubmitting(false)
     }
   }
