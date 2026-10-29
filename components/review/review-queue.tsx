@@ -14,7 +14,6 @@ import { useDb } from "@/hooks/use-db"
 import { useRole } from "@/hooks/use-role"
 import { ROUTES } from "@/lib/constants/routes"
 import type { DraftFormat } from "@/types"
-import { cn } from "@/lib/utils"
 
 type SortKey = "updated_desc" | "updated_asc" | "format" | "campaign"
 
@@ -146,10 +145,7 @@ export function ReviewQueue() {
                       title={
                         campaignTitles.get(draft.campaignId) ?? "Visual draft"
                       }
-                      className={cn(
-                        "mt-3 max-w-xs overflow-hidden rounded-xl border border-border/60",
-                        "[&_svg]:h-auto [&_svg]:w-full"
-                      )}
+                      className="mt-3 max-w-xs"
                     />
                   ) : (
                     <p className="mt-1 line-clamp-2 whitespace-pre-wrap text-sm text-muted-foreground">

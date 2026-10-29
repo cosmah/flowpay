@@ -1,7 +1,24 @@
+import {
+  parseVisualDraft,
+  visualDraftToSvg,
+} from "@/lib/library/visual"
+
 /** Build a promotional SVG from a visual draft brief (or pass through existing SVG / data URL). */
-export function ensureGraphicMarkup(content: string, title = "Promotional graphic"): string {
+export function ensureGraphicMarkup(
+  content: string,
+  title = "Promotional graphic"
+): string {
   const trimmed = content.trim()
-  if (trimmed.startsWith("<svg") || trimmed.startsWith("data:image")) {
+  if (trimmed.startsWith("data:image")) {
+    return trimmed
+  }
+
+  const spec = parseVisualDraft(trimmed, { title })
+  if (spec) {
+    return visualDraftToSvg(spec)
+  }
+
+  if (trimmed.startsWith("<svg")) {
     return trimmed
   }
 

@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { GraphicPreview } from "@/components/library/graphic-preview"
+import { VisualDraftCard } from "@/components/library/visual-draft-card"
 import { Button } from "@/components/ui/button"
 import { CampaignTasksPanel } from "@/components/tasks/campaign-tasks-panel"
 import { EmptyState } from "@/components/shared/empty-state"
@@ -20,7 +20,7 @@ export function CampaignDetail({ campaignId }: { campaignId: string }) {
   const router = useRouter()
   const { canMarket: isMarketer } = useRole()
   const { getReviewer } = useTeam()
-  const { db, deleteCampaign, submitDraft } = useDb()
+  const { db, deleteCampaign, submitDraft, updateDraftContent } = useDb()
   const { handleDraftSubmitted } = useTasks()
   const campaign = db.campaigns.find((c) => c.id === campaignId)
   const drafts = db.drafts.filter((d) => d.campaignId === campaignId)
@@ -187,10 +187,16 @@ export function CampaignDetail({ campaignId }: { campaignId: string }) {
                         </span>
                       </p>
                       {draft.format === "visual" ? (
-                        <GraphicPreview
+                        <VisualDraftCard
                           content={draft.content}
-                          title={`${draft.format} draft`}
-                          className="mt-3 max-w-md overflow-hidden rounded-xl border border-border/60 [&_svg]:h-auto [&_svg]:w-full"
+                          product={campaign.brief.productService}
+                          cta={campaign.brief.customerAction}
+                          title={campaign.brief.title}
+                          editable={canSubmit}
+                          className="mt-3 max-w-md"
+                          onChange={(next) => {
+                            void updateDraftContent(draft.id, next)
+                          }}
                         />
                       ) : (
                         <p className="mt-1 line-clamp-3 text-sm text-muted-foreground">

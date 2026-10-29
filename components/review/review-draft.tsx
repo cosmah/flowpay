@@ -149,7 +149,9 @@ export function ReviewDraft({ draftId }: { draftId: string }) {
           <GraphicPreview
             content={draft.content}
             title={`${draft.format} draft`}
-            className="overflow-hidden rounded-xl border border-border/60 [&_svg]:h-auto [&_svg]:w-full"
+            product={campaign?.brief.productService}
+            cta={campaign?.brief.customerAction}
+            className="max-w-lg"
           />
         ) : (
           <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground">

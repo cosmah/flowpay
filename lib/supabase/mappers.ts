@@ -198,6 +198,14 @@ export function defaultContentBodies(brief: CampaignBrief) {
   return {
     social_caption: `We are proud to introduce ${product}!\n\nPerfect for ${brief.audience}.\n\n👉 ${cta}\n\n#${product.replace(/\s+/g, "")} #NewLaunch`,
     email: `Subject: Introducing ${brief.title}\n\nHi there,\n\n${brief.objective}\n\n${product} helps ${brief.audience}.\n\n${cta} today.\n\n— The team`,
-    graphic: `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080" viewBox="0 0 1080 1080"><rect width="1080" height="1080" fill="#0f766e"/><text x="540" y="500" text-anchor="middle" fill="white" font-size="64" font-family="sans-serif">${product}</text><text x="540" y="600" text-anchor="middle" fill="#ccfbf1" font-size="36" font-family="sans-serif">${cta}</text></svg>`,
+    graphic: JSON.stringify({
+      version: 1,
+      kind: "visual",
+      product,
+      cta,
+      background: "#0f766e",
+      button: { mode: "solid", color: "#ffffff" },
+      buttonTextColor: "#0f766e",
+    }),
   }
 }

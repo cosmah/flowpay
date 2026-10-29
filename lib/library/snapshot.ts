@@ -1,4 +1,4 @@
-import { ensureGraphicMarkup } from "@/lib/library/graphic"
+import { serializeVisualDraft, parseVisualDraft } from "@/lib/library/visual"
 import type { Draft, LibraryItem, LibraryItemType } from "@/types"
 
 function toLibraryType(format: Draft["format"]): LibraryItemType {
@@ -19,10 +19,11 @@ export function snapshotFromDraft(
 ): Omit<LibraryItem, "id"> {
   const type = toLibraryType(draft.format)
   const title = titleFor(draft, campaignName)
-  const content =
+  const visual =
     type === "graphic"
-      ? ensureGraphicMarkup(draft.content, title)
-      : draft.content
+      ? parseVisualDraft(draft.content, { title })
+      : null
+  const content = visual ? serializeVisualDraft(visual) : draft.content
 
   return {
     campaignId: draft.campaignId,
