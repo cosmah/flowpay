@@ -10,11 +10,9 @@ import {
   useState,
   type ReactNode,
 } from "react"
-import { createSeedNotifications } from "@/lib/notifications/seed"
 import type { AppNotification } from "@/types"
 
-const STORAGE_KEY = "flowpay.notifications.v1"
-const SEEDED_KEY = "flowpay.notifications.seeded.v1"
+const STORAGE_KEY = "flowpay.notifications.v2"
 
 interface NotificationContextValue {
   notifications: AppNotification[]
@@ -26,14 +24,14 @@ interface NotificationContextValue {
 
 const NotificationContext = createContext<NotificationContextValue | null>(null)
 
-function readStored(): AppNotification[] | null {
-  if (typeof window === "undefined") return null
+function readStored(): AppNotification[] {
+  if (typeof window === "undefined") return []
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY)
-    if (!raw) return null
+    if (!raw) return []
     return JSON.parse(raw) as AppNotification[]
   } catch {
-    return null
+    return []
   }
 }
 
@@ -54,18 +52,9 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const stored = readStored()
-    const seeded = window.localStorage.getItem(SEEDED_KEY) === "1"
-    if (stored && stored.length > 0) {
-      ref.current = stored
-      setNotifications(stored)
-    } else if (!seeded) {
-      const seed = createSeedNotifications()
-      commit(seed)
-      window.localStorage.setItem(SEEDED_KEY, "1")
-    } else {
-      commit(stored ?? [])
-    }
-  }, [commit])
+    ref.current = stored
+    setNotifications(stored)
+  }, [])
 
   const markRead = useCallback(
     (id: string) => {

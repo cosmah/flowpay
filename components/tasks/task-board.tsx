@@ -79,7 +79,7 @@ export function TaskBoard() {
   }))
 
   function moveTask(taskId: string, status: TaskStatus) {
-    updateTask(taskId, { status })
+    void updateTask(taskId, { status })
     setDraggingId(null)
   }
 

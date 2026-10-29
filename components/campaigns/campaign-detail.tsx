@@ -22,14 +22,13 @@ export function CampaignDetail({ campaignId }: { campaignId: string }) {
   const { db, deleteCampaign, submitDraft } = useDb()
   const { handleDraftSubmitted } = useTasks()
   const campaign = db.campaigns.find((c) => c.id === campaignId)
-  const project = db.projects.find((p) => p.id === campaign?.projectId)
   const drafts = db.drafts.filter((d) => d.campaignId === campaignId)
 
   if (!campaign) {
     return (
       <EmptyState
         title="Campaign not found"
-        description="This campaign is missing from the current H2 snapshot."
+        description="This campaign is not available in Supabase."
         action={
           <Button asChild variant="outline">
             <Link href={ROUTES.campaigns}>Back to campaigns</Link>
@@ -39,14 +38,14 @@ export function CampaignDetail({ campaignId }: { campaignId: string }) {
     )
   }
 
-  function onDelete() {
+  async function onDelete() {
     const confirmed = window.confirm(
-      `Delete “${campaign!.brief.title}”? Related drafts and tasks will be removed from this demo session.`
+      `Delete “${campaign!.brief.title}”? Related content will be removed.`
     )
     if (!confirmed) return
 
     try {
-      const ok = deleteCampaign(campaign!.id)
+      const ok = await deleteCampaign(campaign!.id)
       if (!ok) {
         toast.error("Could not delete this campaign.")
         return
@@ -58,9 +57,9 @@ export function CampaignDetail({ campaignId }: { campaignId: string }) {
     }
   }
 
-  function onSubmitDraft(draft: Draft) {
+  async function onSubmitDraft(draft: Draft) {
     try {
-      const updated = submitDraft(draft.id, currentUser.name)
+      const updated = await submitDraft(draft.id, currentUser.email)
       if (!updated) {
         toast.error("This draft cannot be submitted.")
         return
@@ -85,7 +84,7 @@ export function CampaignDetail({ campaignId }: { campaignId: string }) {
             <StatusBadge status={campaign.status} />
           </div>
           <p className="text-sm text-muted-foreground">
-            Project: {project?.name ?? "Unknown"} · Updated{" "}
+            Owner: {campaign.createdBy} · Updated{" "}
             {new Date(campaign.updatedAt).toLocaleString()}
           </p>
         </div>

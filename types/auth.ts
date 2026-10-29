@@ -1,16 +1,12 @@
 import type { UserRole } from "./roles"
 
-export interface AuthUser {
+export interface PublicUser {
   id: string
   name: string
   email: string
-  /** Demo-only plaintext; replace with hashed passwords when Supabase auth lands. */
-  password: string
   role: UserRole
   createdAt: string
 }
-
-export type PublicUser = Omit<AuthUser, "password">
 
 export interface LoginInput {
   email: string

@@ -10,17 +10,9 @@ import {
   type ReactNode,
 } from "react"
 import { useAuth } from "@/hooks/use-auth"
-import {
-  createSeedMembers,
-  DEFAULT_MARKETER_ID,
-  DEFAULT_REVIEWER_ID,
-} from "@/lib/team/seed"
-import type { PublicUser, TeamMember, TeamMemberStatus, UserRole } from "@/types"
+import { createClient } from "@/lib/supabase/client"
+import type { TeamMember, TeamMemberStatus, UserRole } from "@/types"
 import { initialsFromName } from "@/types"
-
-const MEMBERS_KEY = "flowpay.team.members.v2"
-const SEEDED_KEY = "flowpay.team.seeded.v2"
-const CURRENT_USER_KEY = "flowpay.team.currentUserId.v2"
 
 type InviteInput = {
   name: string
@@ -34,128 +26,89 @@ interface TeamContextValue {
   getMember: (id: string) => TeamMember | undefined
   getReviewer: () => TeamMember
   getMarketers: () => TeamMember[]
-  inviteMember: (input: InviteInput) => TeamMember | { error: string }
-  setMemberStatus: (id: string, status: TeamMemberStatus) => void
-  deleteMember: (id: string) => { ok: true } | { error: string }
+  inviteMember: (input: InviteInput) => Promise<TeamMember | { error: string }>
+  setMemberStatus: (id: string, status: TeamMemberStatus) => Promise<void>
+  deleteMember: (id: string) => Promise<{ ok: true } | { error: string }>
   ready: boolean
 }
 
 const TeamContext = createContext<TeamContextValue | null>(null)
 
-function readJson<T>(key: string): T | null {
-  if (typeof window === "undefined") return null
-  try {
-    const raw = window.localStorage.getItem(key)
-    if (!raw) return null
-    return JSON.parse(raw) as T
-  } catch {
-    return null
-  }
-}
-
 function normalizeEmail(email: string) {
   return email.trim().toLowerCase()
 }
 
-function memberFromAuth(user: PublicUser): TeamMember {
+function profileToMember(row: {
+  id: string
+  name: string
+  email: string
+  role: UserRole
+  status: TeamMemberStatus
+}): TeamMember {
   return {
-    id: `member_${user.id}`,
-    name: user.name,
-    email: normalizeEmail(user.email),
-    role: user.role,
-    initials: initialsFromName(user.name),
-    status: "active",
+    id: row.id,
+    name: row.name,
+    email: normalizeEmail(row.email),
+    role: row.role,
+    initials: initialsFromName(row.name),
+    status: row.status,
   }
+}
+
+const fallbackMember: TeamMember = {
+  id: "anonymous",
+  name: "Guest",
+  email: "guest@flowpay.dev",
+  role: "marketer",
+  initials: "G",
+  status: "active",
 }
 
 export function TeamProvider({ children }: { children: ReactNode }) {
   const { user, isReady: authReady } = useAuth()
-  const seed = useMemo(() => createSeedMembers(), [])
-  const [members, setMembers] = useState<TeamMember[]>(seed)
-  const [currentUserId, setCurrentUserId] = useState(DEFAULT_MARKETER_ID)
+  const [members, setMembers] = useState<TeamMember[]>([])
   const [ready, setReady] = useState(false)
 
-  const persistMembers = useCallback((next: TeamMember[]) => {
-    setMembers(next)
-    window.localStorage.setItem(MEMBERS_KEY, JSON.stringify(next))
+  const loadMembers = useCallback(async () => {
+    const supabase = createClient()
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .order("created_at", { ascending: true })
+
+    if (error) {
+      console.error("[team]", error.message)
+      setMembers([])
+      setReady(true)
+      return
+    }
+
+    setMembers((data ?? []).map(profileToMember))
+    setReady(true)
   }, [])
 
   useEffect(() => {
-    const seeded = window.localStorage.getItem(SEEDED_KEY) === "1"
-    const storedMembers = readJson<TeamMember[]>(MEMBERS_KEY)
-    const storedUserId = window.localStorage.getItem(CURRENT_USER_KEY)
+    if (!authReady) return
+    void loadMembers()
+  }, [authReady, loadMembers, user?.id])
 
-    let roster = seed
-    if (storedMembers && storedMembers.length > 0) {
-      roster = storedMembers.map((m) => ({
-        ...m,
-        status: m.status ?? "active",
-        email: m.email ?? `${m.id}@flowpay.dev`,
-      }))
-      setMembers(roster)
-    } else if (!seeded) {
-      roster = createSeedMembers()
-      setMembers(roster)
-      window.localStorage.setItem(MEMBERS_KEY, JSON.stringify(roster))
-      window.localStorage.setItem(SEEDED_KEY, "1")
-    }
-
-    const fallback =
-      roster.find((m) => m.id === DEFAULT_MARKETER_ID)?.id ?? roster[0]?.id
-    const nextId =
-      storedUserId && roster.some((m) => m.id === storedUserId)
-        ? storedUserId
-        : fallback
-    if (nextId) setCurrentUserId(nextId)
-    setReady(true)
-  }, [seed])
-
-  useEffect(() => {
-    if (!ready) return
-    window.localStorage.setItem(CURRENT_USER_KEY, currentUserId)
-  }, [currentUserId, ready])
-
-  // Logged-in session owns the workspace identity (no demo switcher).
-  useEffect(() => {
-    if (!ready || !authReady || !user) return
-
-    const email = normalizeEmail(user.email)
-    setMembers((prev) => {
-      const existing = prev.find((m) => normalizeEmail(m.email) === email)
-      let next = prev
-      let memberId: string
-
-      if (existing) {
-        memberId = existing.id
-        if (
-          existing.name !== user.name ||
-          existing.role !== user.role ||
-          existing.status === "disabled"
-        ) {
-          next = prev.map((m) =>
-            m.id === existing.id
-              ? {
-                  ...m,
-                  name: user.name,
-                  role: user.role,
-                  initials: initialsFromName(user.name),
-                  status: "active" as const,
-                }
-              : m
-          )
-          window.localStorage.setItem(MEMBERS_KEY, JSON.stringify(next))
-        }
-      } else {
-        const created = memberFromAuth(user)
-        memberId = created.id
-        next = [created, ...prev]
-        window.localStorage.setItem(MEMBERS_KEY, JSON.stringify(next))
+  const currentUser = useMemo(() => {
+    if (user) {
+      const matched = members.find(
+        (member) => normalizeEmail(member.email) === normalizeEmail(user.email)
+      )
+      if (matched) return matched
+      return {
+        id: user.id,
+        name: user.name,
+        email: normalizeEmail(user.email),
+        role: user.role,
+        initials: initialsFromName(user.name),
+        status: "active" as const,
       }
-
-      setCurrentUserId(memberId)
-      return next
-    })
-  }, [ready, authReady, user])
+    }
+    return members.find((m) => m.status === "active") ?? members[0] ?? fallbackMember
+  }, [members, user])
 
   const getMember = useCallback(
     (id: string) => members.find((member) => member.id === id),
@@ -165,16 +118,12 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   const getReviewer = useCallback(() => {
     return (
       members.find(
-        (member) =>
-          member.id === DEFAULT_REVIEWER_ID && member.status === "active"
-      ) ??
-      members.find(
         (member) => member.role === "reviewer" && member.status === "active"
       ) ??
       members.find((member) => member.status === "active") ??
-      members[0]
+      currentUser
     )
-  }, [members])
+  }, [members, currentUser])
 
   const getMarketers = useCallback(
     () =>
@@ -185,7 +134,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   )
 
   const inviteMember = useCallback(
-    (input: InviteInput) => {
+    async (input: InviteInput) => {
       const email = normalizeEmail(input.email)
       const name = input.name.trim()
       if (!name) return { error: "Name is required." }
@@ -194,54 +143,38 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         return { error: "A member with that email already exists." }
       }
 
-      const member: TeamMember = {
-        id: `member_${crypto.randomUUID().slice(0, 8)}`,
-        name,
-        email,
-        role: input.role,
-        initials: initialsFromName(name),
-        status: "active",
+      // Invites require the person to register; store a placeholder note via upsert is not possible
+      // without auth.users. Surface clear instruction instead of fake local rows.
+      return {
+        error:
+          "Ask them to register with this email and role. Profiles appear here after signup.",
       }
-      persistMembers([member, ...members])
-      return member
     },
-    [members, persistMembers]
+    [members]
   )
 
   const setMemberStatus = useCallback(
-    (id: string, status: TeamMemberStatus) => {
-      const next = members.map((m) => (m.id === id ? { ...m, status } : m))
-      persistMembers(next)
-      if (status === "disabled" && id === currentUserId) {
-        const fallback = next.find((m) => m.status === "active")
-        if (fallback) setCurrentUserId(fallback.id)
-      }
+    async (id: string, status: TeamMemberStatus) => {
+      const supabase = createClient()
+      await supabase.from("profiles").update({ status }).eq("id", id)
+      await loadMembers()
     },
-    [members, persistMembers, currentUserId]
+    [loadMembers]
   )
 
   const deleteMember = useCallback(
-    (id: string) => {
-      if (id === currentUserId) {
+    async (id: string) => {
+      if (id === currentUser.id) {
         return { error: "You cannot delete the signed-in member." }
       }
-      const next = members.filter((m) => m.id !== id)
-      if (next.length === members.length) {
-        return { error: "Member not found." }
-      }
-      persistMembers(next)
+      // Hard-delete of auth users needs service role; disable instead.
+      await setMemberStatus(id, "disabled")
       return { ok: true as const }
     },
-    [members, persistMembers, currentUserId]
+    [currentUser.id, setMemberStatus]
   )
 
-  const currentUser =
-    members.find((member) => member.id === currentUserId) ??
-    members.find((m) => m.status === "active") ??
-    members[0] ??
-    seed[0]
-
-  const value = useMemo<TeamContextValue>(
+  const value = useMemo(
     () => ({
       members,
       currentUser,

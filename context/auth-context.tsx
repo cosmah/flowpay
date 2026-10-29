@@ -10,9 +10,13 @@ import {
   type ReactNode,
 } from "react"
 import { toast } from "sonner"
-import { loginWithCredentials, registerAccount } from "@/lib/auth/service"
-import { AUTH_SESSION_KEY } from "@/lib/constants/routes"
-import { h2 } from "@/lib/h2"
+import {
+  getSessionUser,
+  loginWithCredentials,
+  logoutSession,
+  registerAccount,
+} from "@/lib/auth/service"
+import { createClient } from "@/lib/supabase/client"
 import type { PublicUser, UserRole } from "@/types"
 
 interface AuthContextValue {
@@ -35,47 +39,47 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
-function readSession(): PublicUser | null {
-  if (typeof window === "undefined") return null
-  try {
-    const raw = sessionStorage.getItem(AUTH_SESSION_KEY)
-    if (!raw) return null
-    return JSON.parse(raw) as PublicUser
-  } catch {
-    sessionStorage.removeItem(AUTH_SESSION_KEY)
-    return null
-  }
-}
-
-function writeSession(user: PublicUser | null) {
-  if (typeof window === "undefined") return
-  if (!user) {
-    sessionStorage.removeItem(AUTH_SESSION_KEY)
-    return
-  }
-  sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(user))
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<PublicUser | null>(null)
   const [isReady, setIsReady] = useState(false)
 
   useEffect(() => {
-    // Ensure H2 mock users exist before any auth attempt (also covers marketing routes).
-    h2.connect()
-    setUser(readSession())
-    setIsReady(true)
+    let mounted = true
+    const supabase = createClient()
+
+    getSessionUser()
+      .then((sessionUser) => {
+        if (mounted) setUser(sessionUser)
+      })
+      .finally(() => {
+        if (mounted) setIsReady(true)
+      })
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event) => {
+      if (event === "SIGNED_OUT") {
+        if (mounted) setUser(null)
+        return
+      }
+      const next = await getSessionUser()
+      if (mounted) setUser(next)
+    })
+
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
   }, [])
 
   const login = useCallback(
     async (input: { email: string; password: string }) => {
-      const result = loginWithCredentials(input)
+      const result = await loginWithCredentials(input)
       if (!result.ok) {
         toast.error(result.message)
         return { ok: false, fields: result.fields, message: result.message }
       }
 
-      writeSession(result.user)
       setUser(result.user)
       toast.success(`Welcome back, ${result.user.name.split(" ")[0]}.`)
       return { ok: true }
@@ -91,13 +95,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       confirmPassword: string
       role: UserRole
     }) => {
-      const result = registerAccount(input)
+      const result = await registerAccount(input)
       if (!result.ok) {
         toast.error(result.message)
         return { ok: false, fields: result.fields, message: result.message }
       }
 
-      writeSession(result.user)
       setUser(result.user)
       toast.success("Account created. You're signed in.")
       return { ok: true }
@@ -106,7 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 
   const logout = useCallback(() => {
-    writeSession(null)
+    void logoutSession()
     setUser(null)
     toast.message("Signed out")
   }, [])

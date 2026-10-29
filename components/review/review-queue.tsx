@@ -12,7 +12,6 @@ import {
 } from "@/components/shared/list-toolbar"
 import { StatusBadge } from "@/components/shared/status-badge"
 import { useDb } from "@/hooks/use-db"
-import { useLibrary } from "@/hooks/use-library"
 import { useRole } from "@/hooks/use-role"
 import { useTasks } from "@/hooks/use-tasks"
 import { useTeam } from "@/hooks/use-team"
@@ -26,7 +25,6 @@ export function ReviewQueue() {
   const { currentUser, getMarketers } = useTeam()
   const { db, approveDraft, requestDraftChanges } = useDb()
   const { handleDraftApproved, handleChangesRequested } = useTasks()
-  const { approvalStore } = useLibrary()
   const pending = db.drafts.filter((d) => d.status === "in_review")
 
   const [query, setQuery] = useState("")
@@ -75,19 +73,28 @@ export function ReviewQueue() {
     return rows
   }, [pending, query, formatFilter, sort, campaignTitles])
 
-  function onApprove(draft: Draft) {
+  async function onApprove(draft: Draft) {
     try {
-      const updated = approveDraft(draft.id)
+      const updated = await approveDraft(draft.id, currentUser.email)
       if (!updated) {
         toast.error("Could not approve this draft.")
         return
       }
       const campaign = db.campaigns.find((c) => c.id === updated.campaignId)
       handleDraftApproved(updated, {
-        get items() {
-          return approvalStore.items
-        },
-        addItem: approvalStore.addItem,
+        items: [],
+        addItem: (item) => ({
+          id: item.id ?? `lib_${crypto.randomUUID().slice(0, 8)}`,
+          campaignId: item.campaignId,
+          campaignName: item.campaignName,
+          draftId: item.draftId,
+          type: item.type,
+          title: item.title,
+          content: item.content,
+          approvedBy: item.approvedBy,
+          approvedAt: item.approvedAt,
+          tags: item.tags,
+        }),
         campaignName: campaign?.brief.title ?? "Unknown campaign",
         reviewer: currentUser.name,
       })
@@ -97,7 +104,7 @@ export function ReviewQueue() {
     }
   }
 
-  function onRequestChanges(draft: Draft) {
+  async function onRequestChanges(draft: Draft) {
     const body = (comments[draft.id] ?? "").trim()
     if (!body) {
       toast.error("Add a comment for the marketer.")
@@ -105,7 +112,11 @@ export function ReviewQueue() {
     }
 
     try {
-      const updated = requestDraftChanges(draft.id, body)
+      const updated = await requestDraftChanges(
+        draft.id,
+        body,
+        currentUser.email
+      )
       if (!updated) {
         toast.error("Could not request changes.")
         return

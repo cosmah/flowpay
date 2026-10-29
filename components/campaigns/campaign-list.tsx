@@ -20,7 +20,6 @@ import {
 import { StatusBadge } from "@/components/shared/status-badge"
 import { useAuth } from "@/hooks/use-auth"
 import { useDb } from "@/hooks/use-db"
-import { useProject } from "@/hooks/use-project"
 import { useRole } from "@/hooks/use-role"
 import { CAMPAIGN_STATUSES } from "@/lib/campaigns/validation"
 import { ROUTES } from "@/lib/constants/routes"
@@ -34,19 +33,12 @@ export function CampaignList() {
   const { user } = useAuth()
   const { isMarketer } = useRole()
   const { db, createCampaign } = useDb()
-  const { projects, activeProject, activeProjectId } = useProject()
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState("")
   const [status, setStatus] = useState<StatusFilter>("all")
   const [sort, setSort] = useState<SortKey>("updated_desc")
 
-  const projectCampaigns = useMemo(
-    () =>
-      activeProjectId
-        ? db.campaigns.filter((c) => c.projectId === activeProjectId)
-        : db.campaigns,
-    [db.campaigns, activeProjectId]
-  )
+  const projectCampaigns = db.campaigns
 
   const stats = useMemo(() => {
     const counts = Object.fromEntries(
@@ -112,18 +104,11 @@ export function CampaignList() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-muted-foreground">
-          Showing campaigns for{" "}
-          <span className="font-medium text-foreground">
-            {activeProject?.name ?? "all projects"}
-          </span>
-          . Switch projects from the top bar.
+          Campaigns sync from Supabase. Create a Relworx brief to generate draft
+          content items and review tasks.
         </p>
         {isMarketer ? (
-          <Button
-            type="button"
-            onClick={() => setOpen(true)}
-            disabled={projects.length === 0}
-          >
+          <Button type="button" onClick={() => setOpen(true)}>
             Add new
           </Button>
         ) : null}
@@ -196,25 +181,15 @@ export function CampaignList() {
       {filtered.length === 0 ? (
         <EmptyState
           title={
-            projects.length === 0
-              ? "Create a project first"
-              : projectCampaigns.length === 0
-                ? "No campaigns in this project"
-                : "No matches"
+            projectCampaigns.length === 0 ? "No campaigns yet" : "No matches"
           }
           description={
-            projects.length === 0
-              ? "Every campaign belongs to a project. Add a project, then write the Relworx brief."
-              : projectCampaigns.length === 0
-                ? "Create a Relworx brief with objective, audience, product/service, channel, tone, and customer action."
-                : "Try a different search, status filter, or sort order."
+            projectCampaigns.length === 0
+              ? "Create a Relworx brief with objective, audience, product/service, channel, tone, and customer action."
+              : "Try a different search, status filter, or sort order."
           }
           action={
-            projects.length === 0 ? (
-              <Button asChild variant="outline">
-                <Link href={ROUTES.projects}>Go to projects</Link>
-              </Button>
-            ) : isMarketer ? (
+            isMarketer ? (
               <Button type="button" variant="outline" onClick={() => setOpen(true)}>
                 Add new
               </Button>
@@ -263,37 +238,28 @@ export function CampaignList() {
               channel, tone, and customer action.
             </DialogDescription>
           </DialogHeader>
-          {projects.length === 0 ? (
-            <EmptyState
-              title="Create a project first"
-              description="Every campaign belongs to a project."
-              action={
-                <Button asChild>
-                  <Link href={ROUTES.projects}>Go to projects</Link>
-                </Button>
+          <CampaignForm
+            mode="create"
+            projects={[]}
+            submitLabel="Create campaign"
+            compact
+            onCancel={() => setOpen(false)}
+            onSubmit={async ({ brief, status: nextStatus }) => {
+              const result = await createCampaign({
+                projectId: "",
+                brief,
+                status: nextStatus,
+                createdBy: user?.email ?? "marketer",
+              })
+              if ("error" in result) {
+                toast.error(result.error)
+                return
               }
-            />
-          ) : (
-            <CampaignForm
-              mode="create"
-              projects={projects}
-              defaultProjectId={activeProjectId ?? projects[0].id}
-              submitLabel="Create campaign"
-              compact
-              onCancel={() => setOpen(false)}
-              onSubmit={({ projectId, brief, status: nextStatus }) => {
-                const campaign = createCampaign({
-                  projectId,
-                  brief,
-                  status: nextStatus,
-                  createdBy: user?.role ?? "marketer",
-                })
-                toast.success("Campaign brief saved.")
-                setOpen(false)
-                window.location.assign(ROUTES.campaign(campaign.id))
-              }}
-            />
-          )}
+              toast.success("Campaign brief saved.")
+              setOpen(false)
+              window.location.assign(ROUTES.campaign(result.id))
+            }}
+          />
         </DialogContent>
       </Dialog>
     </div>

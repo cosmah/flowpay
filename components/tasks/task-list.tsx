@@ -238,7 +238,7 @@ export function TaskList() {
                         aria-label={`Status for ${task.title}`}
                         value={task.status}
                         onChange={(e) =>
-                          updateTask(task.id, {
+                          void updateTask(task.id, {
                             status: e.target.value as TaskStatus,
                           })
                         }

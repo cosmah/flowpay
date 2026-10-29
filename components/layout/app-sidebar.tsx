@@ -3,7 +3,6 @@
 import {
   BookOpen,
   FolderKanban,
-  Folders,
   Home,
   LayoutDashboard,
   Library,
@@ -34,17 +33,6 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       title: "Dashboard",
       url: ROUTES.dashboard,
       icon: LayoutDashboard,
-    },
-    {
-      title: "Projects",
-      url: ROUTES.projects,
-      icon: Folders,
-      items: [
-        { title: "All projects", url: ROUTES.projects },
-        ...(isMarketer
-          ? [{ title: "New project", url: ROUTES.projectNew }]
-          : []),
-      ],
     },
     {
       title: "Campaigns",

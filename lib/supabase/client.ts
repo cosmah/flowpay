@@ -1,26 +1,9 @@
-/**
- * Browser Supabase client — wire this up once env keys are available.
- *
- * Partner backend owns schema/auth. Frontend should import from here only.
- *
- * Example (when ready):
- *   import { createBrowserClient } from "@supabase/ssr"
- *   export function createClient() {
- *     return createBrowserClient(
- *       process.env.NEXT_PUBLIC_SUPABASE_URL!,
- *       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
- *     )
- *   }
- */
+"use client"
 
-export function createClient(): null {
-  if (
-    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  ) {
-    return null
-  }
+import { createBrowserClient } from "@supabase/ssr"
+import type { Database } from "./types"
+import { getSupabaseAnonKey, getSupabaseUrl } from "./env"
 
-  // Replace stub when @supabase/ssr is installed and keys are set.
-  return null
+export function createClient() {
+  return createBrowserClient<Database>(getSupabaseUrl(), getSupabaseAnonKey())
 }

@@ -108,12 +108,6 @@ export function LoginForm() {
           Register
         </Link>
       </p>
-
-      <p className="rounded-lg bg-muted/60 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
-        Demo: <span className="font-medium">marketer@flowpay.dev</span> or{" "}
-        <span className="font-medium">reviewer@flowpay.dev</span> · password{" "}
-        <span className="font-medium">Flowpay123!</span>
-      </p>
     </form>
   )
 }

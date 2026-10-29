@@ -148,27 +148,6 @@ export function CampaignForm({
 
       <div className="grid gap-5 sm:grid-cols-2">
         <div className="space-y-2 sm:col-span-2">
-          <Label htmlFor="projectId">Project</Label>
-          <select
-            id="projectId"
-            value={values.projectId}
-            aria-invalid={Boolean(fields.projectId)}
-            className="h-10 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-            onChange={(event) => update("projectId", event.target.value)}
-          >
-            <option value="">Select a project</option>
-            {projects.map((project) => (
-              <option key={project.id} value={project.id}>
-                {project.name}
-              </option>
-            ))}
-          </select>
-          {fields.projectId ? (
-            <p className="text-xs text-destructive">{fields.projectId}</p>
-          ) : null}
-        </div>
-
-        <div className="space-y-2 sm:col-span-2">
           <Label htmlFor="title">Campaign title</Label>
           <Input
             id="title"

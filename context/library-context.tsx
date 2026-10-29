@@ -4,130 +4,95 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
-  useRef,
-  useState,
   type ReactNode,
 } from "react"
-import { createSeedLibraryItems } from "@/lib/library/seed"
-import type { LibraryItem } from "@/types"
-
-const STORAGE_KEY = "flowpay.library.v3"
-const SEEDED_KEY = "flowpay.library.seeded.v3"
-
-type NewLibraryItemInput = Omit<LibraryItem, "id"> & { id?: string }
+import { useDb } from "@/hooks/use-db"
+import { createClient } from "@/lib/supabase/client"
+import type { LibraryItem, TestSendLog, TestSendMode } from "@/types"
 
 interface LibraryContextValue {
   items: LibraryItem[]
-  addItem: (input: NewLibraryItemInput) => LibraryItem
-  getItemsByCampaign: (campaignId: string) => LibraryItem[]
+  testSends: TestSendLog[]
   getItem: (id: string) => LibraryItem | undefined
-  /** Live store surface for approve automation (avoids stale React state). */
-  approvalStore: {
-    items: LibraryItem[]
-    addItem: (input: NewLibraryItemInput) => LibraryItem
-  }
+  addFromApproval: (item: LibraryItem) => void
+  logTestSend: (input: {
+    libraryItemId: string
+    mode: TestSendMode
+    message: string
+    result?: TestSendLog["result"]
+    sentTo?: string
+  }) => Promise<TestSendLog>
 }
 
 const LibraryContext = createContext<LibraryContextValue | null>(null)
 
-function readStoredItems(): LibraryItem[] | null {
-  if (typeof window === "undefined") return null
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY)
-    if (!raw) return null
-    return JSON.parse(raw) as LibraryItem[]
-  } catch {
-    return null
-  }
-}
-
-function writeStoredItems(items: LibraryItem[]) {
-  if (typeof window === "undefined") return
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items))
-}
-
 export function LibraryProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<LibraryItem[]>([])
-  const itemsRef = useRef<LibraryItem[]>([])
+  const { db, refresh } = useDb()
 
-  const commit = useCallback((next: LibraryItem[]) => {
-    itemsRef.current = next
-    setItems(next)
-    writeStoredItems(next)
-  }, [])
-
-  useEffect(() => {
-    const stored = readStoredItems()
-    const seeded = window.localStorage.getItem(SEEDED_KEY) === "1"
-
-    if (stored && stored.length > 0) {
-      itemsRef.current = stored
-      setItems(stored)
-    } else if (!seeded) {
-      const seed = createSeedLibraryItems()
-      itemsRef.current = seed
-      setItems(seed)
-      writeStoredItems(seed)
-      window.localStorage.setItem(SEEDED_KEY, "1")
-    } else {
-      const empty = stored ?? []
-      itemsRef.current = empty
-      setItems(empty)
-    }
-  }, [])
-
-  const addItem = useCallback(
-    (input: NewLibraryItemInput) => {
-      const item: LibraryItem = {
-        id: input.id ?? `lib_${crypto.randomUUID().slice(0, 8)}`,
-        campaignId: input.campaignId,
-        campaignName: input.campaignName,
-        draftId: input.draftId,
-        type: input.type,
-        title: input.title,
-        content: input.content,
-        approvedBy: input.approvedBy,
-        approvedAt: input.approvedAt,
-        tags: input.tags ? [...input.tags] : undefined,
-      }
-      commit([item, ...itemsRef.current])
-      return item
-    },
-    [commit]
-  )
-
-  const getItemsByCampaign = useCallback(
-    (campaignId: string) =>
-      itemsRef.current.filter((item) => item.campaignId === campaignId),
-    [items]
-  )
+  const items = db.library
+  const testSends = db.testSends
 
   const getItem = useCallback(
-    (id: string) => itemsRef.current.find((item) => item.id === id),
+    (id: string) => items.find((item) => item.id === id),
     [items]
   )
 
-  const approvalStore = useMemo(
-    () => ({
-      get items() {
-        return itemsRef.current
-      },
-      addItem,
-    }),
-    [addItem]
+  const addFromApproval = useCallback(() => {
+    void refresh()
+  }, [refresh])
+
+  const logTestSend = useCallback(
+    async (input: {
+      libraryItemId: string
+      mode: TestSendMode
+      message: string
+      result?: TestSendLog["result"]
+      sentTo?: string
+    }) => {
+      const supabase = createClient()
+      const item = items.find((row) => row.id === input.libraryItemId)
+      const { data, error } = await supabase
+        .from("test_sends")
+        .insert({
+          library_item_id: input.libraryItemId,
+          campaign_id: item?.campaignId ?? null,
+          content_type: item?.type ?? null,
+          title: item?.title ?? null,
+          sent_to: input.sentTo ?? "delivered@resend.dev",
+          method: input.mode === "resend" ? "resend" : "simulated",
+          status: input.result === "error" ? "error" : "logged",
+          error_message: input.result === "error" ? input.message : null,
+        })
+        .select("*")
+        .single()
+
+      if (error || !data) {
+        throw new Error(error?.message ?? "Could not log test send")
+      }
+
+      await refresh()
+      return {
+        id: data.id,
+        libraryItemId: data.library_item_id,
+        mode: input.mode,
+        result: input.result ?? "submitted",
+        message: input.message,
+        createdAt: data.sent_at,
+      } satisfies TestSendLog
+    },
+    [items, refresh]
   )
 
-  const value = useMemo<LibraryContextValue>(
+  const value = useMemo(
     () => ({
       items,
-      addItem,
-      getItemsByCampaign,
+      testSends,
       getItem,
-      approvalStore,
+      addFromApproval,
+      logTestSend,
     }),
-    [items, addItem, getItemsByCampaign, getItem, approvalStore]
+    [items, testSends, getItem, addFromApproval, logTestSend]
   )
 
   return (

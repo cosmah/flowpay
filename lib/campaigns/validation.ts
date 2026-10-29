@@ -30,7 +30,7 @@ const requiredText = (label: string, min = 3, max = 200) =>
 
 /** Matches Relworx brief: objective, audience, product/service, channel, tone, customer action. */
 export const campaignBriefSchema = z.object({
-  projectId: z.string().trim().min(1, "Select a project"),
+  projectId: z.string().trim().optional().default(""),
   title: requiredText("Title", 3, 80),
   objective: requiredText("Objective", 10, 280),
   audience: requiredText("Audience", 3, 120),
@@ -59,7 +59,7 @@ export const campaignBriefSchema = z.object({
 export type CampaignFormValues = z.infer<typeof campaignBriefSchema>
 
 export function sanitizeBriefInput(input: {
-  projectId: string
+  projectId?: string
   title: string
   objective: string
   audience: string
@@ -71,7 +71,7 @@ export function sanitizeBriefInput(input: {
   status: CampaignStatus
 }): CampaignFormValues | { fields: Record<string, string>; message: string } {
   const parsed = campaignBriefSchema.safeParse({
-    projectId: input.projectId,
+    projectId: input.projectId ?? "",
     title: sanitizeAuthInput(input.title),
     objective: sanitizeAuthInput(input.objective),
     audience: sanitizeAuthInput(input.audience),

@@ -41,7 +41,6 @@ export const WORKSPACE_NAV: {
   roles: UserRole[]
 }[] = [
   { href: ROUTES.dashboard, label: "Dashboard", roles: ["marketer", "reviewer"] },
-  { href: ROUTES.projects, label: "Projects", roles: ["marketer", "reviewer"] },
   { href: ROUTES.campaigns, label: "Campaigns", roles: ["marketer", "reviewer"] },
   { href: ROUTES.tasks, label: "Tasks", roles: ["marketer", "reviewer"] },
   { href: ROUTES.taskBoard, label: "Task board", roles: ["marketer", "reviewer"] },
@@ -52,4 +51,3 @@ export const WORKSPACE_NAV: {
   { href: ROUTES.account, label: "Account", roles: ["marketer", "reviewer"] },
 ]
 
-export const AUTH_SESSION_KEY = "flowpay.auth.session"

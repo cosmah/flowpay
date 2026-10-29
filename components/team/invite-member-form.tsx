@@ -25,19 +25,20 @@ export function InviteMemberForm({ onSuccess }: { onSuccess?: () => void }) {
       return
     }
 
-    const result = inviteMember({ name, email, role })
-    if ("error" in result) {
-      setError(result.error)
-      toast.error(result.error)
-      return
-    }
+    void inviteMember({ name, email, role }).then((result) => {
+      if ("error" in result) {
+        setError(result.error)
+        toast.error(result.error)
+        return
+      }
 
-    setName("")
-    setEmail("")
-    setRole("marketer")
-    setError(null)
-    toast.success(`Invited ${result.name}.`)
-    onSuccess?.()
+      setName("")
+      setEmail("")
+      setRole("marketer")
+      setError(null)
+      toast.success(`${result.name} is on the team.`)
+      onSuccess?.()
+    })
   }
 
   return (
@@ -78,7 +79,11 @@ export function InviteMemberForm({ onSuccess }: { onSuccess?: () => void }) {
           {error}
         </p>
       ) : null}
-      <Button type="submit">Send invite</Button>
+      <Button type="submit">Add teammate note</Button>
+      <p className="text-xs text-muted-foreground">
+        Teammates appear here after they register with Supabase Auth using this
+        email and role.
+      </p>
     </form>
   )
 }

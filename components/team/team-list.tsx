@@ -152,8 +152,9 @@ export function TeamList() {
                       size="sm"
                       variant="outline"
                       onClick={() => {
-                        setMemberStatus(member.id, "active")
-                        toast.success(`${member.name} enabled.`)
+                        void setMemberStatus(member.id, "active").then(() =>
+                          toast.success(`${member.name} enabled.`)
+                        )
                       }}
                     >
                       <CheckCircle2 />
@@ -166,8 +167,9 @@ export function TeamList() {
                       variant="outline"
                       disabled={isCurrent}
                       onClick={() => {
-                        setMemberStatus(member.id, "disabled")
-                        toast.message(`${member.name} disabled.`)
+                        void setMemberStatus(member.id, "disabled").then(() =>
+                          toast.message(`${member.name} disabled.`)
+                        )
                       }}
                     >
                       <Ban />
@@ -184,12 +186,13 @@ export function TeamList() {
                         `Delete ${member.name} from the team?`
                       )
                       if (!confirmed) return
-                      const result = deleteMember(member.id)
-                      if ("error" in result) {
-                        toast.error(result.error)
-                        return
-                      }
-                      toast.success("Member deleted.")
+                      void deleteMember(member.id).then((result) => {
+                        if ("error" in result) {
+                          toast.error(result.error)
+                          return
+                        }
+                        toast.success("Member disabled.")
+                      })
                     }}
                   >
                     <Trash2 />
