@@ -7,7 +7,6 @@ import {
   type ReactNode,
 } from "react"
 import { useAuth } from "@/hooks/use-auth"
-import { useTeam } from "@/context/team-context"
 import type { UserRole } from "@/types"
 
 interface RoleContextValue {
@@ -18,12 +17,10 @@ interface RoleContextValue {
 
 const RoleContext = createContext<RoleContextValue | null>(null)
 
-/** Role comes from the signed-in account (fallback: active team member). */
+/** Role comes only from the signed-in account (no TeamProvider coupling). */
 export function RoleProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
-  const { currentUser } = useTeam()
-
-  const role = user?.role ?? currentUser.role
+  const role: UserRole = user?.role ?? "marketer"
 
   const value = useMemo(
     () => ({

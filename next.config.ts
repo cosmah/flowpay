@@ -1,12 +1,14 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from "next"
 
+/**
+ * Lean config (aligned with panda/web).
+ * Instant/cacheComponents was making every navigation wait on multi-second
+ * "application-code" + params Suspense validation — removed.
+ */
 const nextConfig: NextConfig = {
-  /* config options here */
   experimental: {
-    agentFeedback: true,
+    optimizePackageImports: ["lucide-react", "radix-ui"],
   },
-  cacheComponents: true,
-  partialPrefetching: true,
   turbopack: {
     rules: {
       "*.css": {
@@ -15,6 +17,6 @@ const nextConfig: NextConfig = {
       },
     },
   },
-};
+}
 
-export default nextConfig;
+export default nextConfig

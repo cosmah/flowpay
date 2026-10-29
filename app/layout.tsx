@@ -6,11 +6,15 @@ import "./globals.css"
 const figtree = Figtree({
   variable: "--font-sans",
   subsets: ["latin"],
+  display: "swap",
+  preload: true,
 })
 
 const syne = Syne({
   variable: "--font-heading",
   subsets: ["latin"],
+  display: "swap",
+  preload: true,
 })
 
 export const metadata: Metadata = {

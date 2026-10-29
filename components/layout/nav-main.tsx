@@ -49,7 +49,7 @@ export function NavMain({ items }: { items: NavMainItem[] }) {
             return (
               <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton asChild isActive={pathname === item.url}>
-                  <Link href={item.url}>
+                  <Link href={item.url} prefetch>
                     <item.icon />
                     <span>{item.title}</span>
                   </Link>
@@ -85,7 +85,7 @@ export function NavMain({ items }: { items: NavMainItem[] }) {
                               pathname.startsWith(`${subItem.url}/`))
                           }
                         >
-                          <Link href={subItem.url}>
+                          <Link href={subItem.url} prefetch>
                             <span>{subItem.title}</span>
                           </Link>
                         </SidebarMenuSubButton>

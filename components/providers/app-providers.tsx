@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react"
 import { AuthProvider } from "@/context/auth-context"
-import { ErrorBoundary } from "@/components/shared"
+import { ErrorBoundary } from "@/components/shared/error-boundary"
 import { Toaster } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
 
