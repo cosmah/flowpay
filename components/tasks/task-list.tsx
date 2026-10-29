@@ -2,18 +2,41 @@
 
 import { useMemo, useState } from "react"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { EmptyState } from "@/components/shared/empty-state"
+import {
+  ListToolbar,
+  listControlClassName,
+} from "@/components/shared/list-toolbar"
 import { StatusBadge } from "@/components/shared/status-badge"
 import { AddTaskForm } from "@/components/tasks/add-task-form"
 import { useDb } from "@/hooks/use-db"
 import { useTasks } from "@/hooks/use-tasks"
 import type { TaskStatus } from "@/types"
 
+type SortKey =
+  | "due_asc"
+  | "due_desc"
+  | "title_asc"
+  | "title_desc"
+  | "status"
+  | "owner"
+
 export function TaskList() {
   const { db } = useDb()
   const { tasks, updateTask } = useTasks()
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState("")
   const [ownerFilter, setOwnerFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState<"all" | TaskStatus>("all")
+  const [sort, setSort] = useState<SortKey>("due_asc")
 
   const campaignTitles = useMemo(() => {
     const map = new Map<string, string>()
@@ -29,12 +52,38 @@ export function TaskList() {
   }, [tasks])
 
   const filtered = useMemo(() => {
-    return tasks.filter((task) => {
+    const needle = query.trim().toLowerCase()
+
+    let rows = tasks.filter((task) => {
       if (ownerFilter !== "all" && task.owner !== ownerFilter) return false
       if (statusFilter !== "all" && task.status !== statusFilter) return false
-      return true
+      if (!needle) return true
+      const campaign = campaignTitles.get(task.campaignId) ?? task.campaignId
+      return `${task.title} ${task.owner} ${campaign}`
+        .toLowerCase()
+        .includes(needle)
     })
-  }, [tasks, ownerFilter, statusFilter])
+
+    rows = [...rows].sort((a, b) => {
+      switch (sort) {
+        case "title_asc":
+          return a.title.localeCompare(b.title)
+        case "title_desc":
+          return b.title.localeCompare(a.title)
+        case "status":
+          return a.status.localeCompare(b.status)
+        case "owner":
+          return a.owner.localeCompare(b.owner)
+        case "due_desc":
+          return new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime()
+        case "due_asc":
+        default:
+          return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+      }
+    })
+
+    return rows
+  }, [tasks, ownerFilter, statusFilter, query, sort, campaignTitles])
 
   const campaignOptions = db.campaigns.map((campaign) => ({
     id: campaign.id,
@@ -43,39 +92,73 @@ export function TaskList() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap gap-3">
-        <select
-          aria-label="Filter by owner"
-          value={ownerFilter}
-          onChange={(e) => setOwnerFilter(e.target.value)}
-          className="h-10 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-        >
-          <option value="all">All owners</option>
-          {owners.map((owner) => (
-            <option key={owner} value={owner}>
-              {owner}
-            </option>
-          ))}
-        </select>
-        <select
-          aria-label="Filter by status"
-          value={statusFilter}
-          onChange={(e) =>
-            setStatusFilter(e.target.value as "all" | TaskStatus)
-          }
-          className="h-10 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-        >
-          <option value="all">All statuses</option>
-          <option value="todo">To do</option>
-          <option value="in_progress">In progress</option>
-          <option value="done">Done</option>
-        </select>
+      <div className="flex justify-end">
+        <Button type="button" onClick={() => setOpen(true)}>
+          Add new
+        </Button>
       </div>
+
+      <ListToolbar
+        search={query}
+        onSearchChange={setQuery}
+        searchPlaceholder="Search title, owner, or campaign…"
+        searchLabel="Search tasks"
+        filters={
+          <>
+            <select
+              aria-label="Filter by owner"
+              value={ownerFilter}
+              onChange={(e) => setOwnerFilter(e.target.value)}
+              className={listControlClassName}
+            >
+              <option value="all">All owners</option>
+              {owners.map((owner) => (
+                <option key={owner} value={owner}>
+                  {owner}
+                </option>
+              ))}
+            </select>
+            <select
+              aria-label="Filter by status"
+              value={statusFilter}
+              onChange={(e) =>
+                setStatusFilter(e.target.value as "all" | TaskStatus)
+              }
+              className={listControlClassName}
+            >
+              <option value="all">All statuses</option>
+              <option value="todo">To do</option>
+              <option value="in_progress">In progress</option>
+              <option value="done">Done</option>
+            </select>
+          </>
+        }
+        sort={
+          <select
+            aria-label="Sort tasks"
+            value={sort}
+            onChange={(e) => setSort(e.target.value as SortKey)}
+            className={listControlClassName}
+          >
+            <option value="due_asc">Due soonest</option>
+            <option value="due_desc">Due latest</option>
+            <option value="title_asc">Title A–Z</option>
+            <option value="title_desc">Title Z–A</option>
+            <option value="owner">Owner</option>
+            <option value="status">Status</option>
+          </select>
+        }
+      />
 
       {filtered.length === 0 ? (
         <EmptyState
           title="No tasks match"
-          description="Adjust filters, submit a draft for review, or add a manual task below."
+          description="Adjust search or filters, submit a draft for review, or add a manual task."
+          action={
+            <Button type="button" variant="outline" onClick={() => setOpen(true)}>
+              Add new
+            </Button>
+          }
         />
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-border/70 bg-[var(--rx-paper)]">
@@ -145,7 +228,21 @@ export function TaskList() {
         </div>
       )}
 
-      <AddTaskForm campaigns={campaignOptions} />
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add task</DialogTitle>
+            <DialogDescription>
+              Create a manual task for this workflow.
+            </DialogDescription>
+          </DialogHeader>
+          <AddTaskForm
+            campaigns={campaignOptions}
+            compact
+            onSuccess={() => setOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

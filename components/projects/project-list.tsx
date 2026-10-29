@@ -2,10 +2,22 @@
 
 import Link from "next/link"
 import { useMemo, useState } from "react"
-import { Search } from "lucide-react"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { EmptyState } from "@/components/shared/empty-state"
+import {
+  ListToolbar,
+  listControlClassName,
+} from "@/components/shared/list-toolbar"
+import { ProjectForm } from "@/components/projects/project-form"
+import { useAuth } from "@/hooks/use-auth"
 import { useDb } from "@/hooks/use-db"
 import { useProject } from "@/hooks/use-project"
 import { PROJECT_STATUSES } from "@/lib/projects/validation"
@@ -14,12 +26,21 @@ import type { ProjectStatus } from "@/types"
 import { cn } from "@/lib/utils"
 
 type StatusFilter = "all" | ProjectStatus
+type SortKey =
+  | "updated_desc"
+  | "updated_asc"
+  | "name_asc"
+  | "name_desc"
+  | "status"
 
 export function ProjectList() {
-  const { db } = useDb()
+  const { user } = useAuth()
+  const { db, createProject } = useDb()
   const { activeProjectId, setActiveProjectId } = useProject()
+  const [open, setOpen] = useState(false)
   const [query, setQuery] = useState("")
   const [status, setStatus] = useState<StatusFilter>("all")
+  const [sort, setSort] = useState<SortKey>("updated_desc")
 
   const stats = useMemo(() => {
     const counts = Object.fromEntries(
@@ -40,22 +61,41 @@ export function ProjectList() {
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase()
-    return db.projects
-      .filter((project) => {
-        if (status !== "all" && project.status !== status) return false
-        if (!needle) return true
-        return `${project.name} ${project.description}`
-          .toLowerCase()
-          .includes(needle)
-      })
-      .sort(
-        (a, b) =>
-          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-      )
-  }, [db.projects, query, status])
+    let rows = db.projects.filter((project) => {
+      if (status !== "all" && project.status !== status) return false
+      if (!needle) return true
+      return `${project.name} ${project.description}`
+        .toLowerCase()
+        .includes(needle)
+    })
+
+    rows = [...rows].sort((a, b) => {
+      switch (sort) {
+        case "name_asc":
+          return a.name.localeCompare(b.name)
+        case "name_desc":
+          return b.name.localeCompare(a.name)
+        case "status":
+          return a.status.localeCompare(b.status)
+        case "updated_asc":
+          return new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime()
+        case "updated_desc":
+        default:
+          return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      }
+    })
+
+    return rows
+  }, [db.projects, query, status, sort])
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-end">
+        <Button type="button" onClick={() => setOpen(true)}>
+          Add new
+        </Button>
+      </div>
+
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {stats.map((stat) => (
           <button
@@ -77,37 +117,49 @@ export function ProjectList() {
         ))}
       </div>
 
-      <div className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-[var(--rx-paper)] p-4 sm:flex-row">
-        <div className="relative min-w-0 flex-1">
-          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search projects…"
-            className="h-10 pl-9"
-          />
-        </div>
-        <select
-          value={status}
-          onChange={(event) => setStatus(event.target.value as StatusFilter)}
-          className="h-10 rounded-lg border border-input bg-transparent px-2.5 text-sm"
-        >
-          <option value="all">All statuses</option>
-          {PROJECT_STATUSES.map((item) => (
-            <option key={item} value={item}>
-              {item}
-            </option>
-          ))}
-        </select>
-      </div>
+      <ListToolbar
+        search={query}
+        onSearchChange={setQuery}
+        searchPlaceholder="Search projects…"
+        searchLabel="Search projects"
+        filters={
+          <select
+            value={status}
+            onChange={(event) => setStatus(event.target.value as StatusFilter)}
+            className={listControlClassName}
+            aria-label="Filter by status"
+          >
+            <option value="all">All statuses</option>
+            {PROJECT_STATUSES.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
+        }
+        sort={
+          <select
+            value={sort}
+            onChange={(event) => setSort(event.target.value as SortKey)}
+            className={listControlClassName}
+            aria-label="Sort projects"
+          >
+            <option value="updated_desc">Newest updated</option>
+            <option value="updated_asc">Oldest updated</option>
+            <option value="name_asc">Name A–Z</option>
+            <option value="name_desc">Name Z–A</option>
+            <option value="status">Status</option>
+          </select>
+        }
+      />
 
       {filtered.length === 0 ? (
         <EmptyState
-          title="No projects yet"
-          description="Projects group Relworx campaigns. Create one, then switch it from the top bar."
+          title="No projects match"
+          description="Create a project to group Relworx campaigns, or clear search and filters."
           action={
-            <Button asChild variant="outline">
-              <Link href={ROUTES.projectNew}>New project</Link>
+            <Button type="button" variant="outline" onClick={() => setOpen(true)}>
+              Add new
             </Button>
           }
         />
@@ -160,6 +212,33 @@ export function ProjectList() {
           })}
         </ul>
       )}
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Add project</DialogTitle>
+            <DialogDescription>
+              Projects group Relworx campaigns. You can switch the active project
+              from the top bar.
+            </DialogDescription>
+          </DialogHeader>
+          <ProjectForm
+            mode="create"
+            submitLabel="Create project"
+            compact
+            onCancel={() => setOpen(false)}
+            onSubmit={(values) => {
+              const project = createProject({
+                ...values,
+                createdBy: user?.role ?? "marketer",
+              })
+              setActiveProjectId(project.id)
+              toast.success("Project created and selected.")
+              setOpen(false)
+            }}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

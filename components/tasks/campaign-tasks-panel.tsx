@@ -1,11 +1,26 @@
 "use client"
 
+import { useMemo, useState } from "react"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { EmptyState } from "@/components/shared/empty-state"
+import {
+  ListToolbar,
+  listControlClassName,
+} from "@/components/shared/list-toolbar"
 import { StatusBadge } from "@/components/shared/status-badge"
 import { AddTaskForm } from "@/components/tasks/add-task-form"
 import { useTasks } from "@/hooks/use-tasks"
 import type { TaskStatus } from "@/types"
+
+type SortKey = "due_asc" | "due_desc" | "title_asc" | "status"
 
 export function CampaignTasksPanel({
   campaignId,
@@ -16,24 +31,97 @@ export function CampaignTasksPanel({
 }) {
   const { getTasksByCampaign, updateTask } = useTasks()
   const tasks = getTasksByCampaign(campaignId)
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState("")
+  const [statusFilter, setStatusFilter] = useState<"all" | TaskStatus>("all")
+  const [sort, setSort] = useState<SortKey>("due_asc")
+
+  const filtered = useMemo(() => {
+    const needle = query.trim().toLowerCase()
+    let rows = tasks.filter((task) => {
+      if (statusFilter !== "all" && task.status !== statusFilter) return false
+      if (!needle) return true
+      return `${task.title} ${task.owner}`.toLowerCase().includes(needle)
+    })
+
+    rows = [...rows].sort((a, b) => {
+      switch (sort) {
+        case "title_asc":
+          return a.title.localeCompare(b.title)
+        case "status":
+          return a.status.localeCompare(b.status)
+        case "due_desc":
+          return new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime()
+        case "due_asc":
+        default:
+          return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+      }
+    })
+    return rows
+  }, [tasks, query, statusFilter, sort])
 
   return (
     <section className="space-y-4">
-      <div>
-        <h3 className="font-heading text-lg text-[var(--rx-ink)]">Tasks</h3>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Review, revise, and manual work for this campaign.
-        </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h3 className="font-heading text-lg text-[var(--rx-ink)]">Tasks</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Review, revise, and manual work for this campaign.
+          </p>
+        </div>
+        <Button type="button" size="sm" onClick={() => setOpen(true)}>
+          Add new
+        </Button>
       </div>
 
-      {tasks.length === 0 ? (
+      <ListToolbar
+        search={query}
+        onSearchChange={setQuery}
+        searchPlaceholder="Search tasks…"
+        searchLabel="Search campaign tasks"
+        filters={
+          <select
+            aria-label="Filter by status"
+            value={statusFilter}
+            onChange={(e) =>
+              setStatusFilter(e.target.value as "all" | TaskStatus)
+            }
+            className={listControlClassName}
+          >
+            <option value="all">All statuses</option>
+            <option value="todo">To do</option>
+            <option value="in_progress">In progress</option>
+            <option value="done">Done</option>
+          </select>
+        }
+        sort={
+          <select
+            aria-label="Sort campaign tasks"
+            value={sort}
+            onChange={(e) => setSort(e.target.value as SortKey)}
+            className={listControlClassName}
+          >
+            <option value="due_asc">Due soonest</option>
+            <option value="due_desc">Due latest</option>
+            <option value="title_asc">Title A–Z</option>
+            <option value="status">Status</option>
+          </select>
+        }
+      />
+
+      {filtered.length === 0 ? (
         <EmptyState
           title="No tasks for this campaign"
-          description="Submit a draft to auto-create a review task, or add a manual task below."
+          description="Submit a draft to auto-create a review task, or add a manual task."
+          action={
+            <Button type="button" variant="outline" onClick={() => setOpen(true)}>
+              Add new
+            </Button>
+          }
         />
       ) : (
         <ul className="divide-y divide-border/70 overflow-hidden rounded-2xl border border-border/70 bg-[var(--rx-paper)]">
-          {tasks.map((task) => (
+          {filtered.map((task) => (
             <li
               key={task.id}
               className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
@@ -79,10 +167,22 @@ export function CampaignTasksPanel({
         </ul>
       )}
 
-      <AddTaskForm
-        campaignId={campaignId}
-        campaigns={[{ id: campaignId, title: campaignTitle }]}
-      />
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add task</DialogTitle>
+            <DialogDescription>
+              Create a manual task for {campaignTitle}.
+            </DialogDescription>
+          </DialogHeader>
+          <AddTaskForm
+            campaignId={campaignId}
+            campaigns={[{ id: campaignId, title: campaignTitle }]}
+            compact
+            onSuccess={() => setOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </section>
   )
 }

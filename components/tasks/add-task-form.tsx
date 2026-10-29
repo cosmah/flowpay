@@ -7,13 +7,18 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useTasks } from "@/hooks/use-tasks"
 import { handleClientError } from "@/lib/errors"
+import { cn } from "@/lib/utils"
 
 export function AddTaskForm({
   campaignId,
   campaigns,
+  onSuccess,
+  compact = false,
 }: {
   campaignId?: string
   campaigns: { id: string; title: string }[]
+  onSuccess?: () => void
+  compact?: boolean
 }) {
   const { addTask } = useTasks()
   const [title, setTitle] = useState("")
@@ -52,6 +57,7 @@ export function AddTaskForm({
       setDueDate("")
       setError(null)
       toast.success("Task added.")
+      onSuccess?.()
     } catch (err) {
       handleClientError(err)
     }
@@ -60,14 +66,20 @@ export function AddTaskForm({
   return (
     <form
       onSubmit={onSubmit}
-      className="space-y-4 rounded-2xl border border-border/70 bg-[var(--rx-paper)] px-5 py-5"
+      className={cn(
+        "space-y-4",
+        !compact &&
+          "rounded-2xl border border-border/70 bg-[var(--rx-paper)] px-5 py-5"
+      )}
     >
-      <div>
-        <h3 className="font-heading text-lg text-[var(--rx-ink)]">Add task</h3>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Create a manual task for this workflow.
-        </p>
-      </div>
+      {!compact ? (
+        <div>
+          <h3 className="font-heading text-lg text-[var(--rx-ink)]">Add task</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Create a manual task for this workflow.
+          </p>
+        </div>
+      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2 sm:col-span-2">

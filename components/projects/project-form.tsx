@@ -13,6 +13,7 @@ import {
 } from "@/lib/projects/validation"
 import { handleClientError } from "@/lib/errors"
 import type { Project, ProjectStatus } from "@/types"
+import { cn } from "@/lib/utils"
 
 type Fields = Partial<Record<keyof ProjectFormValues | "form", string>>
 
@@ -28,12 +29,14 @@ export function ProjectForm({
   submitLabel,
   onSubmit,
   onCancel,
+  compact = false,
 }: {
   mode: "create" | "edit"
   initial?: Project
   submitLabel: string
   onSubmit: (values: ProjectFormValues) => void | Promise<void>
   onCancel?: () => void
+  compact?: boolean
 }) {
   const [values, setValues] = useState<ProjectFormValues>(
     initial
@@ -81,7 +84,11 @@ export function ProjectForm({
     <form
       onSubmit={handleSubmit}
       noValidate
-      className="space-y-5 rounded-2xl border border-border/70 bg-[var(--rx-paper)] p-5 sm:p-6"
+      className={cn(
+        "space-y-5",
+        !compact &&
+          "rounded-2xl border border-border/70 bg-[var(--rx-paper)] p-5 sm:p-6"
+      )}
     >
       <div className="space-y-2">
         <Label htmlFor="name">Project name</Label>

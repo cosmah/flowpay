@@ -2,11 +2,23 @@
 
 import Link from "next/link"
 import { useMemo, useState } from "react"
-import { Search } from "lucide-react"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { CampaignForm } from "@/components/campaigns/campaign-form"
 import { EmptyState } from "@/components/shared/empty-state"
+import {
+  ListToolbar,
+  listControlClassName,
+} from "@/components/shared/list-toolbar"
 import { StatusBadge } from "@/components/shared/status-badge"
+import { useAuth } from "@/hooks/use-auth"
 import { useDb } from "@/hooks/use-db"
 import { useProject } from "@/hooks/use-project"
 import { CAMPAIGN_STATUSES } from "@/lib/campaigns/validation"
@@ -18,8 +30,10 @@ type SortKey = "updated_desc" | "updated_asc" | "title_asc" | "title_desc" | "st
 type StatusFilter = "all" | CampaignStatus
 
 export function CampaignList() {
-  const { db } = useDb()
-  const { activeProject, activeProjectId } = useProject()
+  const { user } = useAuth()
+  const { db, createCampaign } = useDb()
+  const { projects, activeProject, activeProjectId } = useProject()
+  const [open, setOpen] = useState(false)
   const [query, setQuery] = useState("")
   const [status, setStatus] = useState<StatusFilter>("all")
   const [sort, setSort] = useState<SortKey>("updated_desc")
@@ -94,13 +108,22 @@ export function CampaignList() {
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-muted-foreground">
-        Showing campaigns for{" "}
-        <span className="font-medium text-foreground">
-          {activeProject?.name ?? "all projects"}
-        </span>
-        . Switch projects from the top bar.
-      </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-muted-foreground">
+          Showing campaigns for{" "}
+          <span className="font-medium text-foreground">
+            {activeProject?.name ?? "all projects"}
+          </span>
+          . Switch projects from the top bar.
+        </p>
+        <Button
+          type="button"
+          onClick={() => setOpen(true)}
+          disabled={projects.length === 0}
+        >
+          Add new
+        </Button>
+      </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         {stats.map((stat) => (
@@ -130,68 +153,66 @@ export function CampaignList() {
         ))}
       </div>
 
-      <div className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-[var(--rx-paper)] p-4 sm:flex-row sm:items-center">
-        <div className="relative min-w-0 flex-1">
-          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search title, audience, product, action…"
-            className="h-10 pl-9"
-            aria-label="Search campaigns"
-          />
-        </div>
-        <select
-          value={status}
-          onChange={(event) => setStatus(event.target.value as StatusFilter)}
-          className="h-10 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-          aria-label="Filter by status"
-        >
-          <option value="all">All statuses</option>
-          {CAMPAIGN_STATUSES.map((item) => (
-            <option key={item} value={item}>
-              {item.replaceAll("_", " ")}
-            </option>
-          ))}
-        </select>
-        <select
-          value={sort}
-          onChange={(event) => setSort(event.target.value as SortKey)}
-          className="h-10 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-          aria-label="Sort campaigns"
-        >
-          <option value="updated_desc">Newest updated</option>
-          <option value="updated_asc">Oldest updated</option>
-          <option value="title_asc">Title A–Z</option>
-          <option value="title_desc">Title Z–A</option>
-          <option value="status">Status</option>
-        </select>
-      </div>
+      <ListToolbar
+        search={query}
+        onSearchChange={setQuery}
+        searchPlaceholder="Search title, audience, product, action…"
+        searchLabel="Search campaigns"
+        filters={
+          <select
+            value={status}
+            onChange={(event) => setStatus(event.target.value as StatusFilter)}
+            className={listControlClassName}
+            aria-label="Filter by status"
+          >
+            <option value="all">All statuses</option>
+            {CAMPAIGN_STATUSES.map((item) => (
+              <option key={item} value={item}>
+                {item.replaceAll("_", " ")}
+              </option>
+            ))}
+          </select>
+        }
+        sort={
+          <select
+            value={sort}
+            onChange={(event) => setSort(event.target.value as SortKey)}
+            className={listControlClassName}
+            aria-label="Sort campaigns"
+          >
+            <option value="updated_desc">Newest updated</option>
+            <option value="updated_asc">Oldest updated</option>
+            <option value="title_asc">Title A–Z</option>
+            <option value="title_desc">Title Z–A</option>
+            <option value="status">Status</option>
+          </select>
+        }
+      />
 
       {filtered.length === 0 ? (
         <EmptyState
-          title={projectCampaigns.length === 0 ? "No campaigns in this project" : "No matches"}
+          title={
+            projects.length === 0
+              ? "Create a project first"
+              : projectCampaigns.length === 0
+                ? "No campaigns in this project"
+                : "No matches"
+          }
           description={
-            projectCampaigns.length === 0
-              ? "Create a Relworx brief with objective, audience, product/service, channel, tone, and customer action."
-              : "Try a different search, status filter, or sort order."
+            projects.length === 0
+              ? "Every campaign belongs to a project. Add a project, then write the Relworx brief."
+              : projectCampaigns.length === 0
+                ? "Create a Relworx brief with objective, audience, product/service, channel, tone, and customer action."
+                : "Try a different search, status filter, or sort order."
           }
           action={
-            projectCampaigns.length === 0 ? (
+            projects.length === 0 ? (
               <Button asChild variant="outline">
-                <Link href={ROUTES.campaignNew}>Create brief</Link>
+                <Link href={ROUTES.projects}>Go to projects</Link>
               </Button>
             ) : (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setQuery("")
-                  setStatus("all")
-                  setSort("updated_desc")
-                }}
-              >
-                Clear filters
+              <Button type="button" variant="outline" onClick={() => setOpen(true)}>
+                Add new
               </Button>
             )
           }
@@ -228,6 +249,49 @@ export function CampaignList() {
           ))}
         </ul>
       )}
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Add campaign</DialogTitle>
+            <DialogDescription>
+              Write a Relworx brief with objective, audience, product/service,
+              channel, tone, and customer action.
+            </DialogDescription>
+          </DialogHeader>
+          {projects.length === 0 ? (
+            <EmptyState
+              title="Create a project first"
+              description="Every campaign belongs to a project."
+              action={
+                <Button asChild>
+                  <Link href={ROUTES.projects}>Go to projects</Link>
+                </Button>
+              }
+            />
+          ) : (
+            <CampaignForm
+              mode="create"
+              projects={projects}
+              defaultProjectId={activeProjectId ?? projects[0].id}
+              submitLabel="Create campaign"
+              compact
+              onCancel={() => setOpen(false)}
+              onSubmit={({ projectId, brief, status: nextStatus }) => {
+                const campaign = createCampaign({
+                  projectId,
+                  brief,
+                  status: nextStatus,
+                  createdBy: user?.role ?? "marketer",
+                })
+                toast.success("Campaign brief saved.")
+                setOpen(false)
+                window.location.assign(ROUTES.campaign(campaign.id))
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

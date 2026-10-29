@@ -57,6 +57,7 @@ export function CampaignForm({
   submitLabel,
   onSubmit,
   onCancel,
+  compact = false,
 }: {
   mode: "create" | "edit"
   initial?: Campaign
@@ -69,6 +70,7 @@ export function CampaignForm({
     status: CampaignStatus
   }) => void | Promise<void>
   onCancel?: () => void
+  compact?: boolean
 }) {
   const [values, setValues] = useState<CampaignFormValues>(
     initial
@@ -133,7 +135,11 @@ export function CampaignForm({
     <form
       onSubmit={handleSubmit}
       noValidate
-      className="space-y-6 rounded-2xl border border-border/70 bg-[var(--rx-paper)] p-5 sm:p-6"
+      className={cn(
+        "space-y-6",
+        !compact &&
+          "rounded-2xl border border-border/70 bg-[var(--rx-paper)] p-5 sm:p-6"
+      )}
     >
       <p className="text-sm text-muted-foreground">
         Relworx brief: objective, audience, service/product, channel, tone, and
