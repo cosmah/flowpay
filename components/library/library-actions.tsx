@@ -4,24 +4,27 @@ import { useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { useLibrary } from "@/hooks/use-library"
+import { channelLabel, shareUrlForChannel } from "@/lib/library/channels"
 import { downloadLibraryItem } from "@/lib/library/download"
 import { handleClientError } from "@/lib/errors"
 import type { LibraryItem } from "@/types"
 
-export function LibraryActions({ item }: { item: LibraryItem }) {
+export function LibraryActions({
+  item,
+  showPush = true,
+}: {
+  item: LibraryItem
+  showPush?: boolean
+}) {
   const { logTestSend } = useLibrary()
   const [copied, setCopied] = useState(false)
   const [testing, setTesting] = useState(false)
 
   async function onCopy() {
-    if (item.type === "graphic") {
-      toast.message("Use Download to export this graphic.")
-      return
-    }
     try {
       await navigator.clipboard.writeText(item.content)
       setCopied(true)
-      toast.success("Copied")
+      toast.success("Caption copied")
       window.setTimeout(() => setCopied(false), 1500)
     } catch (error) {
       handleClientError(error)
@@ -31,7 +34,11 @@ export function LibraryActions({ item }: { item: LibraryItem }) {
   async function onDownload() {
     try {
       await downloadLibraryItem(item)
-      toast.success("Download started")
+      toast.success(
+        item.imageUrl
+          ? "Downloading banner image and caption"
+          : "Download started"
+      )
     } catch (error) {
       handleClientError(error)
     }
@@ -56,13 +63,29 @@ export function LibraryActions({ item }: { item: LibraryItem }) {
     }
   }
 
+  function onPush() {
+    if (!item.channel) {
+      toast.message("No channel selected for this version.")
+      return
+    }
+    const share = shareUrlForChannel(item.channel, {
+      title: item.title,
+      content: item.content,
+      imageUrl: item.imageUrl,
+    })
+    if (share.href) {
+      window.open(share.href, "_blank", "noopener,noreferrer")
+    }
+    if (share.hint) {
+      toast.message(share.hint)
+    }
+  }
+
   return (
     <div className="flex flex-wrap gap-2">
-      {item.type !== "graphic" ? (
-        <Button type="button" size="sm" variant="outline" onClick={onCopy}>
-          {copied ? "Copied" : "Copy"}
-        </Button>
-      ) : null}
+      <Button type="button" size="sm" variant="outline" onClick={onCopy}>
+        {copied ? "Copied" : "Copy"}
+      </Button>
       <Button type="button" size="sm" variant="outline" onClick={onDownload}>
         Download
       </Button>
@@ -75,6 +98,11 @@ export function LibraryActions({ item }: { item: LibraryItem }) {
       >
         {testing ? "Sending…" : "Test"}
       </Button>
+      {showPush && item.channel ? (
+        <Button type="button" size="sm" onClick={onPush}>
+          Push to {channelLabel(item.channel)}
+        </Button>
+      ) : null}
     </div>
   )
 }

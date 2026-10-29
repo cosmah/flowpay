@@ -6,15 +6,8 @@ import {
   sanitizeAuthInput,
 } from "@/lib/auth/validation"
 import { sendEmail, verificationEmailHtml } from "@/lib/email/resend"
+import { resolveSiteOrigin } from "@/lib/site-url"
 import { createAdminClient } from "@/lib/supabase/admin"
-
-function siteOrigin(request: Request) {
-  const envUrl = process.env.NEXT_PUBLIC_SITE_URL
-  if (envUrl) return envUrl.replace(/\/$/, "")
-  const host = request.headers.get("x-forwarded-host") || request.headers.get("host")
-  const proto = request.headers.get("x-forwarded-proto") || "http"
-  return host ? `${proto}://${host}` : "http://localhost:3000"
-}
 
 export async function POST(request: Request) {
   try {
@@ -49,7 +42,7 @@ export async function POST(request: Request) {
     }
 
     const admin = createAdminClient()
-    const origin = siteOrigin(request)
+    const origin = resolveSiteOrigin(request)
     const emailRedirectTo = `${origin}/auth/callback`
 
     const metadata = isInvite

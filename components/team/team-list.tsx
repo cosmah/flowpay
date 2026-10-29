@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
-import { Ban, CheckCircle2, Trash2, UserPlus } from "lucide-react"
+import { Ban, CheckCircle2, Mail, Trash2, UserPlus } from "lucide-react"
 import { InviteMemberForm } from "@/components/team/invite-member-form"
 import { Button } from "@/components/ui/button"
 import {
@@ -26,6 +26,7 @@ export function TeamList() {
   const {
     members,
     currentUser,
+    resendInvite,
     setMemberStatus,
     deleteMember,
   } = useTeam()
@@ -34,6 +35,7 @@ export function TeamList() {
   const { items } = useLibrary()
   const { db } = useDb()
   const [inviteOpen, setInviteOpen] = useState(false)
+  const [resendingId, setResendingId] = useState<string | null>(null)
 
   const rows = useMemo(() => {
     return members.map((member) => {
@@ -152,6 +154,29 @@ export function TeamList() {
                   </Button>
                   {canManageTeam && !isCurrent ? (
                     <>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={resendingId === member.id}
+                        onClick={() => {
+                          setResendingId(member.id)
+                          void resendInvite(member.id)
+                            .then((result) => {
+                              if ("error" in result) {
+                                toast.error(result.error)
+                                return
+                              }
+                              toast.success(
+                                `Invite resent to ${member.email} with a new password.`
+                              )
+                            })
+                            .finally(() => setResendingId(null))
+                        }}
+                      >
+                        <Mail />
+                        {resendingId === member.id ? "Sending…" : "Resend invite"}
+                      </Button>
                       {disabled ? (
                         <Button
                           type="button"

@@ -33,6 +33,22 @@ export function downloadSvgFile(svg: string, filename: string) {
   URL.revokeObjectURL(url)
 }
 
+async function downloadRemoteImage(url: string, filenameBase: string) {
+  const response = await fetch(url)
+  if (!response.ok) {
+    throw new Error("Could not download banner image.")
+  }
+  const blob = await response.blob()
+  const extFromType = blob.type.split("/")[1]?.replace("jpeg", "jpg")
+  const extFromUrl = url.split(".").pop()?.split("?")[0]
+  const ext =
+    (extFromType && extFromType.length <= 5 ? extFromType : null) ||
+    (extFromUrl && /^[a-z0-9]+$/i.test(extFromUrl) ? extFromUrl : "png")
+  const objectUrl = URL.createObjectURL(blob)
+  triggerDownload(objectUrl, `${filenameBase}.${ext}`)
+  URL.revokeObjectURL(objectUrl)
+}
+
 /** Render SVG markup to a PNG download; falls back to .svg on failure. */
 export async function downloadGraphic(item: LibraryItem) {
   const svg = ensureGraphicMarkup(item.content, item.title)
@@ -48,11 +64,21 @@ export async function downloadGraphic(item: LibraryItem) {
 
 export async function downloadLibraryItem(item: LibraryItem) {
   const base = slugifyTitle(item.title)
-  if (item.type === "graphic") {
-    await downloadGraphic(item)
-    return
+  let downloaded = false
+
+  if (item.imageUrl) {
+    await downloadRemoteImage(item.imageUrl, `${base}-banner`)
+    downloaded = true
   }
-  downloadTextFile(item.content, `${base}.txt`)
+
+  if (item.content?.trim()) {
+    downloadTextFile(item.content, `${base}.txt`)
+    downloaded = true
+  }
+
+  if (!downloaded && item.type === "graphic") {
+    await downloadGraphic(item)
+  }
 }
 
 function svgToPngDataUrl(svg: string): Promise<string> {

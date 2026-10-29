@@ -46,7 +46,7 @@ export function verificationEmailHtml(input: {
       on FlowPay. You will be the company admin.
     </p>
     <p>
-      <a href="${input.verifyUrl}"
+      <a href="${escapeAttr(input.verifyUrl)}"
          style="display:inline-block;background:#14212b;color:#fff;padding:12px 18px;border-radius:10px;text-decoration:none;">
         Verify email
       </a>
@@ -67,34 +67,36 @@ export function inviteEmailHtml(input: {
   loginUrl: string
   inviterName: string
 }) {
+  const loginUrl = input.loginUrl || "http://localhost:3000/login"
+
   return `
-  <div style="font-family: system-ui, sans-serif; line-height: 1.5; color: #14212b;">
-    <h1 style="font-size: 20px;">You're invited to FlowPay</h1>
-    <p>Hi ${escapeHtml(input.name)},</p>
-    <p>
+  <div style="font-family: system-ui, sans-serif; line-height: 1.5; color: #14212b; background:#ffffff; padding:24px;">
+    <h1 style="font-size: 20px; color:#14212b;">You're invited to FlowPay</h1>
+    <p style="color:#14212b;">Hi ${escapeHtml(input.name)},</p>
+    <p style="color:#14212b;">
       ${escapeHtml(input.inviterName)} invited you to join
       <strong>${escapeHtml(input.companyName)}</strong> as a
       <strong>${escapeHtml(input.role)}</strong>.
     </p>
-    <p>Your account is ready. Sign in with these credentials:</p>
-    <table style="border-collapse:collapse;margin:16px 0;width:100%;max-width:420px;">
-      <tr>
-        <td style="padding:8px 12px;background:#f4f7f8;border:1px solid #d7e0e5;">Email</td>
-        <td style="padding:8px 12px;border:1px solid #d7e0e5;"><code>${escapeHtml(input.email)}</code></td>
-      </tr>
-      <tr>
-        <td style="padding:8px 12px;background:#f4f7f8;border:1px solid #d7e0e5;">Temporary password</td>
-        <td style="padding:8px 12px;border:1px solid #d7e0e5;"><code>${escapeHtml(input.password)}</code></td>
-      </tr>
-    </table>
+    <p style="color:#14212b;"><strong>Your sign-in details</strong></p>
+    <p style="color:#14212b; margin: 0 0 8px;">
+      Email: <strong>${escapeHtml(input.email)}</strong>
+    </p>
+    <p style="color:#14212b; margin: 0 0 16px;">
+      Temporary password:
+      <strong style="font-family: ui-monospace, monospace; letter-spacing: 0.02em;">
+        ${escapeHtml(input.password)}
+      </strong>
+    </p>
     <p>
-      <a href="${input.loginUrl}"
-         style="display:inline-block;background:#14212b;color:#fff;padding:12px 18px;border-radius:10px;text-decoration:none;">
+      <a href="${escapeAttr(loginUrl)}"
+         style="display:inline-block;background:#14212b;color:#ffffff;padding:12px 18px;border-radius:10px;text-decoration:none;">
         Sign in to FlowPay
       </a>
     </p>
     <p style="font-size: 13px; color: #5b6b76;">
-      For security, change your password after your first sign-in.
+      Sign-in page: ${escapeHtml(loginUrl)}<br/>
+      Change your password after your first sign-in.
     </p>
   </div>`
 }
@@ -105,4 +107,8 @@ function escapeHtml(value: string) {
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
+}
+
+function escapeAttr(value: string) {
+  return escapeHtml(value).replaceAll("'", "&#39;")
 }

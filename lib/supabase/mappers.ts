@@ -181,6 +181,7 @@ export function libraryFromRow(
     title: row.title,
     content: row.body,
     imageUrl: row.graphic_url ?? undefined,
+    channel: row.channel ?? undefined,
     approvedBy: row.approved_by ?? "Reviewer",
     approvedAt: row.approved_at,
     tags: row.tags ?? undefined,

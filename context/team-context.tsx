@@ -27,6 +27,7 @@ interface TeamContextValue {
   getReviewer: () => TeamMember
   getMarketers: () => TeamMember[]
   inviteMember: (input: InviteInput) => Promise<TeamMember | { error: string }>
+  resendInvite: (memberId: string) => Promise<{ ok: true } | { error: string }>
   setMemberStatus: (id: string, status: TeamMemberStatus) => Promise<void>
   deleteMember: (id: string) => Promise<{ ok: true } | { error: string }>
   ready: boolean
@@ -201,6 +202,26 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     [loadMembers, members]
   )
 
+  const resendInvite = useCallback(async (memberId: string) => {
+    try {
+      const response = await fetch("/api/team/invite/resend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ memberId }),
+      })
+      const payload = (await response.json()) as {
+        ok?: boolean
+        error?: string
+      }
+      if (!response.ok || !payload.ok) {
+        return { error: payload.error ?? "Could not resend invite." }
+      }
+      return { ok: true as const }
+    } catch {
+      return { error: "Could not resend invite." }
+    }
+  }, [])
+
   const setMemberStatus = useCallback(
     async (id: string, status: TeamMemberStatus) => {
       if (!user?.companyId) return
@@ -236,6 +257,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       getReviewer,
       getMarketers,
       inviteMember,
+      resendInvite,
       setMemberStatus,
       deleteMember,
       ready,
@@ -247,6 +269,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       getReviewer,
       getMarketers,
       inviteMember,
+      resendInvite,
       setMemberStatus,
       deleteMember,
       ready,

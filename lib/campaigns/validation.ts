@@ -5,6 +5,7 @@ import type { CampaignBrief, CampaignStatus } from "@/types"
 export const CAMPAIGN_CHANNELS = [
   "email",
   "linkedin",
+  "x",
   "instagram",
   "sms",
   "web",

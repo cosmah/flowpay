@@ -13,6 +13,7 @@ import { createClient } from "@/lib/supabase/client"
 import {
   campaignBriefToRow,
   campaignFromRow,
+  channelsFromDb,
   draftFromContentItem,
   libraryFromRow,
   projectFromRow,
@@ -638,22 +639,29 @@ export function DbProvider({ children }: { children: ReactNode }) {
 
       const { data: campaign } = await supabase
         .from("campaigns")
-        .select("title")
+        .select("title, channel, banner_urls")
         .eq("id", data.campaign_id)
         .maybeSingle()
 
-      await supabase.from("library").insert({
+      const channelList = channelsFromDb(campaign?.channel ?? "web")
+      const graphicUrl =
+        data.graphic_url ?? campaign?.banner_urls?.[0] ?? null
+      const approvedAt = new Date().toISOString()
+      const libraryRows = channelList.map((channel) => ({
         campaign_id: data.campaign_id,
         content_item_id: data.id,
         type: data.type,
-        title: data.title,
+        title: `${data.title} · ${channel}`,
         body: data.body,
-        graphic_url: data.graphic_url,
-        tags: [data.type, campaign?.title ?? "campaign"],
+        graphic_url: graphicUrl,
+        channel,
+        tags: [data.type, channel, campaign?.title ?? "campaign"],
         approved_by: reviewerEmail ?? "reviewer",
-        approved_at: new Date().toISOString(),
+        approved_at: approvedAt,
         company_id: data.company_id,
-      })
+      }))
+
+      await supabase.from("library").insert(libraryRows)
 
       const { data: siblings } = await supabase
         .from("content_items")

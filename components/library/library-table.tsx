@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { channelLabel } from "@/lib/library/channels"
 import { ROUTES } from "@/lib/constants/routes"
 import type { LibraryItem } from "@/types"
 
@@ -29,7 +30,7 @@ export function LibraryTable({ items }: { items: LibraryItem[] }) {
           <li key={item.id} className="space-y-3 px-4 py-4">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
-                {item.type}
+                {item.channel ? channelLabel(item.channel) : item.type}
               </span>
               <ApprovedBadge />
             </div>
@@ -65,7 +66,7 @@ export function LibraryTable({ items }: { items: LibraryItem[] }) {
           <TableHeader>
             <TableRow className="hover:bg-transparent">
               <TableHead className="w-[36%] px-5">Title</TableHead>
-              <TableHead>Type</TableHead>
+              <TableHead>Channel</TableHead>
               <TableHead>Campaign</TableHead>
               <TableHead>Approved by</TableHead>
               <TableHead>Approved</TableHead>
@@ -93,8 +94,8 @@ export function LibraryTable({ items }: { items: LibraryItem[] }) {
                     </p>
                   </div>
                 </TableCell>
-                <TableCell className="capitalize text-muted-foreground">
-                  {item.type}
+                <TableCell className="text-muted-foreground">
+                  {item.channel ? channelLabel(item.channel) : item.type}
                 </TableCell>
                 <TableCell className="max-w-[10rem] truncate">
                   {item.campaignName}

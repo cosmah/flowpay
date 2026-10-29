@@ -13,6 +13,8 @@ export interface LibraryItem {
   title: string
   content: string
   imageUrl?: string
+  /** Channel this approved version targets (from campaign selection). */
+  channel?: string
   approvedBy: string
   approvedAt: string
   tags?: string[]

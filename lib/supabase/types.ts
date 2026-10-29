@@ -331,6 +331,7 @@ export type Database = {
           title: string
           body: string
           graphic_url: string | null
+          channel: string | null
           tags: string[] | null
           approved_at: string
           approved_by: string | null
@@ -344,6 +345,7 @@ export type Database = {
           title: string
           body: string
           graphic_url?: string | null
+          channel?: string | null
           tags?: string[] | null
           approved_at?: string
           approved_by?: string | null
@@ -357,6 +359,7 @@ export type Database = {
           title?: string
           body?: string
           graphic_url?: string | null
+          channel?: string | null
           tags?: string[] | null
           approved_at?: string
           approved_by?: string | null
