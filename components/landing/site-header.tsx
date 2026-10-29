@@ -44,7 +44,7 @@ export function SiteHeader() {
               <Button
                 size="sm"
                 variant="ghost"
-                className="text-[var(--rx-paper)] hover:bg-white/10 hover:text-[var(--rx-paper)]"
+                className="h-9 rounded-full px-4 text-[var(--rx-paper)] hover:bg-white/10 hover:text-[var(--rx-paper)]"
                 onClick={logout}
               >
                 Sign out
@@ -52,7 +52,7 @@ export function SiteHeader() {
               <Button
                 asChild
                 size="sm"
-                className="bg-[var(--rx-signal)] text-[var(--rx-ink)] hover:bg-[var(--rx-signal)]/90"
+                className="h-9 rounded-full bg-[var(--rx-signal)] px-4 text-[var(--rx-ink)] hover:bg-[var(--rx-signal)]/90"
               >
                 <Link href={ROUTES.dashboard}>Open workspace</Link>
               </Button>
@@ -62,15 +62,15 @@ export function SiteHeader() {
               <Button
                 asChild
                 size="sm"
-                variant="ghost"
-                className="text-[var(--rx-paper)] hover:bg-white/10 hover:text-[var(--rx-paper)]"
+                variant="outline"
+                className="h-9 rounded-full border-white/25 bg-transparent px-4 text-[var(--rx-paper)] hover:bg-white/10 hover:text-[var(--rx-paper)]"
               >
                 <Link href={ROUTES.login}>Log in</Link>
               </Button>
               <Button
                 asChild
                 size="sm"
-                className="bg-[var(--rx-signal)] text-[var(--rx-ink)] hover:bg-[var(--rx-signal)]/90"
+                className="h-9 rounded-full bg-[var(--rx-signal)] px-4 text-[var(--rx-ink)] hover:bg-[var(--rx-signal)]/90"
               >
                 <Link href={ROUTES.register}>Register</Link>
               </Button>
@@ -111,14 +111,14 @@ export function SiteHeader() {
               <>
                 <Button
                   asChild
-                  className="bg-[var(--rx-signal)] text-[var(--rx-ink)] hover:bg-[var(--rx-signal)]/90"
+                  className="h-11 rounded-full bg-[var(--rx-signal)] px-6 text-[var(--rx-ink)] hover:bg-[var(--rx-signal)]/90"
                   onClick={() => setOpen(false)}
                 >
                   <Link href={ROUTES.dashboard}>Open workspace</Link>
                 </Button>
                 <Button
                   variant="outline"
-                  className="border-white/20 bg-transparent text-[var(--rx-paper)] hover:bg-white/10"
+                  className="h-11 rounded-full border-white/25 bg-transparent px-6 text-[var(--rx-paper)] hover:bg-white/10"
                   onClick={() => {
                     logout()
                     setOpen(false)
@@ -132,14 +132,14 @@ export function SiteHeader() {
                 <Button
                   asChild
                   variant="outline"
-                  className="border-white/20 bg-transparent text-[var(--rx-paper)] hover:bg-white/10"
+                  className="h-11 rounded-full border-white/25 bg-transparent px-6 text-[var(--rx-paper)] hover:bg-white/10"
                   onClick={() => setOpen(false)}
                 >
                   <Link href={ROUTES.login}>Log in</Link>
                 </Button>
                 <Button
                   asChild
-                  className="bg-[var(--rx-signal)] text-[var(--rx-ink)] hover:bg-[var(--rx-signal)]/90"
+                  className="h-11 rounded-full bg-[var(--rx-signal)] px-6 text-[var(--rx-ink)] hover:bg-[var(--rx-signal)]/90"
                   onClick={() => setOpen(false)}
                 >
                   <Link href={ROUTES.register}>Register</Link>
