@@ -145,19 +145,60 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       const email = normalizeEmail(input.email)
       const name = input.name.trim()
       if (!name) return { error: "Name is required." }
-      if (!email || !email.includes("@")) return { error: "Valid email is required." }
+      if (!email || !email.includes("@")) {
+        return { error: "Valid email is required." }
+      }
+      if (!["admin", "marketer", "reviewer"].includes(input.role)) {
+        return { error: "Choose a single role: admin, marketer, or reviewer." }
+      }
       if (members.some((m) => normalizeEmail(m.email) === email)) {
         return { error: "A member with that email already exists." }
       }
 
-      // Invites require the person to register; store a placeholder note via upsert is not possible
-      // without auth.users. Surface clear instruction instead of fake local rows.
-      return {
-        error:
-          "Ask them to register with this email and role. Profiles appear here after signup.",
+      try {
+        const response = await fetch("/api/team/invite", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name,
+            email,
+            role: input.role,
+          }),
+        })
+        const payload = (await response.json()) as {
+          ok?: boolean
+          error?: string
+          fields?: Record<string, string>
+          member?: {
+            id: string
+            name: string
+            email: string
+            role: UserRole
+            status: TeamMemberStatus
+          }
+        }
+
+        if (!response.ok || !payload.ok) {
+          return {
+            error:
+              payload.fields?.email ??
+              payload.fields?.name ??
+              payload.fields?.role ??
+              payload.error ??
+              "Could not send invite.",
+          }
+        }
+
+        await loadMembers()
+        if (payload.member) {
+          return profileToMember(payload.member)
+        }
+        return { error: "Invite sent, but member profile was not returned." }
+      } catch {
+        return { error: "Could not send invite." }
       }
     },
-    [members]
+    [loadMembers, members]
   )
 
   const setMemberStatus = useCallback(

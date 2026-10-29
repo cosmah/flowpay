@@ -11,7 +11,7 @@ export default function NewCampaignPage() {
     <div className="w-full">
       <PageHeader
         title="New campaign"
-        description="Fill in the brief, validate required fields, and save to start drafts."
+        description="Add post content, attach banner images, and choose where it will publish."
       />
       <CampaignCreateForm />
     </div>

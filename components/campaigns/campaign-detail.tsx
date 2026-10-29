@@ -3,7 +3,6 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { VisualDraftCard } from "@/components/library/visual-draft-card"
 import { Button } from "@/components/ui/button"
 import { CampaignTasksPanel } from "@/components/tasks/campaign-tasks-panel"
 import { EmptyState } from "@/components/shared/empty-state"
@@ -20,7 +19,7 @@ export function CampaignDetail({ campaignId }: { campaignId: string }) {
   const router = useRouter()
   const { canMarket: isMarketer } = useRole()
   const { getReviewer } = useTeam()
-  const { db, deleteCampaign, submitDraft, updateDraftContent } = useDb()
+  const { db, deleteCampaign, submitDraft } = useDb()
   const { handleDraftSubmitted } = useTasks()
   const campaign = db.campaigns.find((c) => c.id === campaignId)
   const drafts = db.drafts.filter((d) => d.campaignId === campaignId)
@@ -96,7 +95,7 @@ export function CampaignDetail({ campaignId }: { campaignId: string }) {
         <div className="flex flex-wrap gap-2">
           {isMarketer ? (
             <Button asChild variant="outline">
-              <Link href={ROUTES.campaignEdit(campaign.id)}>Edit brief</Link>
+              <Link href={ROUTES.campaignEdit(campaign.id)}>Edit</Link>
             </Button>
           ) : null}
           {isMarketer ? (
@@ -108,64 +107,55 @@ export function CampaignDetail({ campaignId }: { campaignId: string }) {
       </div>
 
       <div className="rounded-2xl border border-border/70 bg-[var(--rx-paper)] px-5 py-5">
-        <h3 className="font-heading text-lg text-[var(--rx-ink)]">
-          Campaign brief
-        </h3>
-        <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2 xl:grid-cols-3">
-          <div className="sm:col-span-2 xl:col-span-3">
-            <dt className="text-muted-foreground">Objective</dt>
-            <dd className="mt-1 text-foreground">{campaign.brief.objective}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Audience</dt>
-            <dd className="mt-1 text-foreground">{campaign.brief.audience}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Service or product</dt>
-            <dd className="mt-1 text-foreground">
-              {campaign.brief.productService}
+        <h3 className="font-heading text-lg text-[var(--rx-ink)]">Post</h3>
+        <dl className="mt-4 grid gap-4 text-sm xl:grid-cols-12">
+          <div className="xl:col-span-8">
+            <dt className="text-muted-foreground">Content</dt>
+            <dd className="mt-1 whitespace-pre-wrap text-foreground">
+              {campaign.brief.content}
             </dd>
           </div>
-          <div>
-            <dt className="text-muted-foreground">Tone</dt>
-            <dd className="mt-1 text-foreground">{campaign.brief.tone}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Desired customer action</dt>
-            <dd className="mt-1 text-foreground">
-              {campaign.brief.customerAction}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Channel</dt>
+          <div className="xl:col-span-4">
+            <dt className="text-muted-foreground">Channels</dt>
             <dd className="mt-1 capitalize text-foreground">
               {campaign.brief.channels.join(", ")}
             </dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Deadline</dt>
+            <dt className="mt-4 text-muted-foreground">Deadline</dt>
             <dd className="mt-1 text-foreground">
               {campaign.brief.deadline
                 ? new Date(campaign.brief.deadline).toLocaleDateString()
                 : "Not set"}
             </dd>
           </div>
+          {campaign.brief.imageUrls.length > 0 ? (
+            <div className="xl:col-span-12">
+              <dt className="text-muted-foreground">Banners</dt>
+              <dd className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+                {campaign.brief.imageUrls.map((url) => (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    key={url}
+                    src={url}
+                    alt="Campaign banner"
+                    className="aspect-[4/3] w-full rounded-lg border border-border/60 object-cover"
+                  />
+                ))}
+              </dd>
+            </div>
+          ) : null}
         </dl>
       </div>
 
       <section>
         <div className="mb-3 flex items-center justify-between gap-3">
           <h3 className="font-heading text-lg text-[var(--rx-ink)]">
-            Drafts & visual
+            Draft for review
           </h3>
-          <p className="text-xs text-muted-foreground">
-            2 text formats + 1 visual
-          </p>
         </div>
         {drafts.length === 0 ? (
           <EmptyState
-            title="No drafts yet"
-            description="Generate a social caption, email draft, and promotional graphic from this brief."
+            title="No draft yet"
+            description="Edit and save this campaign to create a reviewable post draft."
           />
         ) : (
           <ul className="divide-y divide-border/70 overflow-hidden rounded-2xl border border-border/70 bg-[var(--rx-paper)]">
@@ -175,34 +165,39 @@ export function CampaignDetail({ campaignId }: { campaignId: string }) {
                 (draft.status === "draft" ||
                   draft.status === "changes_requested")
               const latestFeedback = draft.reviewComments.at(-1)
+              const images = [
+                ...(draft.imageUrl ? [draft.imageUrl] : []),
+                ...campaign.brief.imageUrls.filter(
+                  (url) => url !== draft.imageUrl
+                ),
+              ]
 
               return (
                 <li key={draft.id} className="space-y-3 px-5 py-4">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0">
-                      <p className="font-heading capitalize text-[var(--rx-ink)]">
-                        {draft.format}
+                    <div className="min-w-0 flex-1">
+                      <p className="font-heading text-[var(--rx-ink)]">
+                        Manual post
                         <span className="ml-2 text-xs font-normal text-muted-foreground">
                           via {draft.generationSource}
                         </span>
                       </p>
-                      {draft.format === "visual" ? (
-                        <VisualDraftCard
-                          content={draft.content}
-                          product={campaign.brief.productService}
-                          cta={campaign.brief.customerAction}
-                          title={campaign.brief.title}
-                          editable={canSubmit}
-                          className="mt-3 max-w-md"
-                          onChange={(next) => {
-                            void updateDraftContent(draft.id, next)
-                          }}
-                        />
-                      ) : (
-                        <p className="mt-1 line-clamp-3 text-sm text-muted-foreground">
-                          {draft.content}
-                        </p>
-                      )}
+                      <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">
+                        {draft.content}
+                      </p>
+                      {images.length > 0 ? (
+                        <div className="mt-3 grid max-w-xl grid-cols-2 gap-2 sm:grid-cols-3">
+                          {images.map((url) => (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              key={url}
+                              src={url}
+                              alt="Banner"
+                              className="aspect-[4/3] w-full rounded-md border border-border/60 object-cover"
+                            />
+                          ))}
+                        </div>
+                      ) : null}
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                       <StatusBadge status={draft.status} />

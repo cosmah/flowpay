@@ -90,8 +90,11 @@ export const inviteRegisterSchema = z
   })
 
 export const inviteMemberSchema = z.object({
+  name: nameSchema,
   email: emailSchema,
-  role: z.enum(["marketer", "reviewer"], { message: "Choose a role" }),
+  role: z.enum(["admin", "marketer", "reviewer"], {
+    message: "Choose a role",
+  }),
 })
 
 export type LoginFormValues = z.infer<typeof loginSchema>

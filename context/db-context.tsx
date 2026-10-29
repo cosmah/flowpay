@@ -13,7 +13,6 @@ import { createClient } from "@/lib/supabase/client"
 import {
   campaignBriefToRow,
   campaignFromRow,
-  defaultContentBodies,
   draftFromContentItem,
   libraryFromRow,
   projectFromRow,
@@ -348,26 +347,19 @@ export function DbProvider({ children }: { children: ReactNode }) {
         return { error: error?.message ?? "Could not create campaign." }
       }
 
-      const bodies = defaultContentBodies(input.brief)
-      const contentRows = (
-        [
-          ["social_caption", `${input.brief.productService} — Social Caption`, bodies.social_caption],
-          ["email", `${input.brief.productService} — Email`, bodies.email],
-          ["graphic", `${input.brief.productService} — Graphic`, bodies.graphic],
-        ] as const
-      ).map(([type, title, body]) => ({
-        campaign_id: campaign.id,
-        type,
-        title,
-        body,
-        status: "draft" as const,
-        version: 1,
-        company_id: companyId,
-      }))
-
+      const primaryImage = input.brief.imageUrls[0] ?? null
       const { data: contentItems } = await supabase
         .from("content_items")
-        .insert(contentRows)
+        .insert({
+          campaign_id: campaign.id,
+          type: "social_caption" as const,
+          title: input.brief.title,
+          body: input.brief.content,
+          graphic_url: primaryImage,
+          status: "draft" as const,
+          version: 1,
+          company_id: companyId,
+        })
         .select("*")
 
       if (contentItems?.length) {
@@ -377,7 +369,7 @@ export function DbProvider({ children }: { children: ReactNode }) {
           contentItems.map((item) => ({
             campaign_id: campaign.id,
             content_item_id: item.id,
-            title: `Review & submit ${item.type.replace("_", " ")}`,
+            title: `Review & submit post`,
             owner_email: payload.owner_email ?? null,
             due_date: due.toISOString().slice(0, 10),
             status: "pending" as const,
@@ -442,6 +434,19 @@ export function DbProvider({ children }: { children: ReactNode }) {
         .select("*")
         .single()
       if (error || !data) return undefined
+
+      const primaryImage = input.brief.imageUrls[0] ?? null
+      await supabase
+        .from("content_items")
+        .update({
+          title: input.brief.title,
+          body: input.brief.content,
+          graphic_url: primaryImage,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("campaign_id", id)
+        .eq("type", "social_caption")
+
       await refresh()
       return campaignFromRow(data)
     },

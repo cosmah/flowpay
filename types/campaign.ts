@@ -1,18 +1,12 @@
 export type CampaignStatus = "draft" | "in_review" | "approved" | "changes_requested"
 
-/**
- * Campaign brief fields:
- * objective, audience, service/product, channel, tone, desired customer action.
- */
+/** Manual campaign post: title, content to publish, channels, optional banners. */
 export interface CampaignBrief {
   title: string
-  objective: string
-  audience: string
-  productService: string
-  tone: string
-  customerAction: string
+  content: string
   channels: string[]
   deadline?: string
+  imageUrls: string[]
 }
 
 export interface Campaign {

@@ -40,12 +40,9 @@ export function channelsToDb(channels: string[]): string {
 export function campaignFromRow(row: Tables<"campaigns">): Campaign {
   const brief: CampaignBrief = {
     title: row.title,
-    objective: row.objective,
-    audience: row.audience,
-    productService: row.product,
-    tone: row.tone,
-    customerAction: row.cta,
+    content: row.objective,
     channels: channelsFromDb(row.channel),
+    imageUrls: row.banner_urls ?? [],
   }
 
   const status: CampaignStatus =
@@ -65,12 +62,13 @@ export function campaignFromRow(row: Tables<"campaigns">): Campaign {
 export function campaignBriefToRow(brief: CampaignBrief) {
   return {
     title: brief.title,
-    objective: brief.objective,
-    audience: brief.audience,
-    product: brief.productService,
+    objective: brief.content,
+    audience: "general",
+    product: "manual",
     channel: channelsToDb(brief.channels),
-    tone: brief.tone,
-    cta: brief.customerAction,
+    tone: "manual",
+    cta: "post",
+    banner_urls: brief.imageUrls,
   }
 }
 
@@ -91,13 +89,20 @@ export function draftFromContentItem(
   row: Tables<"content_items">,
   reviews: Tables<"reviews">[] = []
 ): Draft {
+  const imageUrl =
+    row.graphic_url ||
+    (row.body.startsWith("http://") || row.body.startsWith("https://")
+      ? row.body
+      : undefined)
+
   return {
     id: row.id,
     campaignId: row.campaign_id,
     format: DRAFT_FORMAT[row.type] ?? "caption",
     content: row.body,
     status: row.status,
-    generationSource: "template",
+    generationSource: "manual",
+    imageUrl,
     reviewComments: reviews
       .filter((review) => review.content_item_id === row.id && review.feedback)
       .map((review) => ({
@@ -175,6 +180,7 @@ export function libraryFromRow(
     type: LIBRARY_TYPE[row.type] ?? "caption",
     title: row.title,
     content: row.body,
+    imageUrl: row.graphic_url ?? undefined,
     approvedBy: row.approved_by ?? "Reviewer",
     approvedAt: row.approved_at,
     tags: row.tags ?? undefined,
@@ -192,20 +198,3 @@ export function testSendFromRow(row: Tables<"test_sends">): TestSendLog {
   }
 }
 
-export function defaultContentBodies(brief: CampaignBrief) {
-  const product = brief.productService
-  const cta = brief.customerAction
-  return {
-    social_caption: `We are proud to introduce ${product}!\n\nPerfect for ${brief.audience}.\n\n👉 ${cta}\n\n#${product.replace(/\s+/g, "")} #NewLaunch`,
-    email: `Subject: Introducing ${brief.title}\n\nHi there,\n\n${brief.objective}\n\n${product} helps ${brief.audience}.\n\n${cta} today.\n\n— The team`,
-    graphic: JSON.stringify({
-      version: 1,
-      kind: "visual",
-      product,
-      cta,
-      background: "#0f766e",
-      button: { mode: "solid", color: "#ffffff" },
-      buttonTextColor: "#0f766e",
-    }),
-  }
-}

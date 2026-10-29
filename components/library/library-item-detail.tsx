@@ -48,16 +48,26 @@ export function LibraryItemDetail({ itemId }: { itemId: string }) {
           <LibraryActions item={item} />
         </div>
 
-        {item.type === "graphic" ? (
+        {item.type === "graphic" && !item.imageUrl ? (
           <GraphicPreview
             content={item.content}
             title={item.title}
             className="mt-6 overflow-hidden rounded-xl border border-border/60 [&_svg]:h-auto [&_svg]:w-full"
           />
         ) : (
-          <pre className="mt-6 whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground">
-            {item.content}
-          </pre>
+          <>
+            <pre className="mt-6 whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground">
+              {item.content}
+            </pre>
+            {item.imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={item.imageUrl}
+                alt={item.title}
+                className="mt-4 max-h-[28rem] w-full rounded-xl border border-border/60 object-contain"
+              />
+            ) : null}
+          </>
         )}
       </div>
     </div>

@@ -1,13 +1,10 @@
 /**
- * Canonical brief field list and workspace screen map for the content workflow.
+ * Canonical field list and workspace screen map for the content workflow.
  */
 export const BRIEF_FIELDS = [
-  "objective",
-  "audience",
-  "productService",
+  "content",
   "channels",
-  "tone",
-  "customerAction",
+  "imageUrls",
 ] as const
 
 export const CORE_SCREENS = [

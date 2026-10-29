@@ -67,10 +67,7 @@ export function CampaignList() {
       if (!needle) return true
       const haystack = [
         campaign.brief.title,
-        campaign.brief.objective,
-        campaign.brief.audience,
-        campaign.brief.productService,
-        campaign.brief.customerAction,
+        campaign.brief.content,
         campaign.brief.channels.join(" "),
       ]
         .join(" ")
@@ -201,7 +198,7 @@ export function CampaignList() {
             projects.length === 0
               ? "Every campaign belongs to a project. Add a project, then write the brief."
               : projectCampaigns.length === 0
-                ? "Create a brief with objective, audience, product/service, channel, tone, and customer action."
+                ? "Create a campaign with post content, channels, and optional banner images."
                 : "Try a different search, status filter, or sort order."
           }
           action={
@@ -228,11 +225,13 @@ export function CampaignList() {
                   <p className="font-heading text-base text-[var(--rx-ink)]">
                     {campaign.brief.title}
                   </p>
-                  <p className="mt-1 line-clamp-1 text-sm text-muted-foreground">
-                    {campaign.brief.objective}
+                  <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                    {campaign.brief.content}
                   </p>
                   <p className="mt-2 text-xs text-muted-foreground">
-                    {campaign.brief.productService} ·{" "}
+                    {campaign.brief.imageUrls.length
+                      ? `${campaign.brief.imageUrls.length} banner${campaign.brief.imageUrls.length === 1 ? "" : "s"} · `
+                      : ""}
                     {campaign.brief.channels.join(" · ")} · Updated{" "}
                     {new Date(campaign.updatedAt).toLocaleDateString()}
                   </p>

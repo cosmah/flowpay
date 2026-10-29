@@ -4,7 +4,6 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
-import { GraphicPreview } from "@/components/library/graphic-preview"
 import { EmptyState } from "@/components/shared/empty-state"
 import { StatusBadge } from "@/components/shared/status-badge"
 import { Button } from "@/components/ui/button"
@@ -145,18 +144,26 @@ export function ReviewDraft({ draftId }: { draftId: string }) {
           {draft.authorName ? ` · by ${draft.authorName}` : ""}
         </p>
 
-        {draft.format === "visual" ? (
-          <GraphicPreview
-            content={draft.content}
-            title={`${draft.format} draft`}
-            product={campaign?.brief.productService}
-            cta={campaign?.brief.customerAction}
-            className="max-w-lg"
-          />
-        ) : (
-          <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground">
-            {draft.content}
-          </pre>
+        <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground">
+          {draft.content}
+        </pre>
+        {(draft.imageUrl || (campaign?.brief.imageUrls.length ?? 0) > 0) && (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {[
+              ...(draft.imageUrl ? [draft.imageUrl] : []),
+              ...(campaign?.brief.imageUrls.filter(
+                (url) => url !== draft.imageUrl
+              ) ?? []),
+            ].map((url) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                key={url}
+                src={url}
+                alt="Campaign banner"
+                className="aspect-[4/3] w-full rounded-lg border border-border/60 object-cover"
+              />
+            ))}
+          </div>
         )}
       </div>
 

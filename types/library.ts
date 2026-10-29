@@ -12,6 +12,7 @@ export interface LibraryItem {
   type: LibraryItemType
   title: string
   content: string
+  imageUrl?: string
   approvedBy: string
   approvedAt: string
   tags?: string[]

@@ -6,12 +6,15 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useRole } from "@/hooks/use-role"
-import type { UserRole } from "@/types"
+import { useTeam } from "@/hooks/use-team"
+import { INVITABLE_ROLES, ROLE_LABELS, type UserRole } from "@/types"
 
 export function InviteMemberForm({ onSuccess }: { onSuccess?: () => void }) {
   const { canManageTeam } = useRole()
+  const { inviteMember } = useTeam()
+  const [name, setName] = useState("")
   const [email, setEmail] = useState("")
-  const [role, setRole] = useState<Exclude<UserRole, "admin">>("marketer")
+  const [role, setRole] = useState<UserRole>("marketer")
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
@@ -30,28 +33,17 @@ export function InviteMemberForm({ onSuccess }: { onSuccess?: () => void }) {
     setSubmitting(true)
 
     try {
-      const response = await fetch("/api/team/invite", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, role }),
-      })
-      const payload = (await response.json()) as {
-        ok?: boolean
-        error?: string
-        fields?: Record<string, string>
-      }
-
-      if (!response.ok || !payload.ok) {
-        const message = payload.error ?? "Could not send invite."
-        setError(payload.fields?.email ?? message)
-        toast.error(message)
-        setSubmitting(false)
+      const result = await inviteMember({ name, email, role })
+      if ("error" in result) {
+        setError(result.error)
+        toast.error(result.error)
         return
       }
 
+      setName("")
       setEmail("")
       setRole("marketer")
-      toast.success("Invite email sent.")
+      toast.success("Invite sent with a temporary password.")
       onSuccess?.()
     } catch {
       setError("Could not send invite.")
@@ -64,6 +56,16 @@ export function InviteMemberForm({ onSuccess }: { onSuccess?: () => void }) {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="space-y-2">
+        <Label htmlFor="invite-name">Full name</Label>
+        <Input
+          id="invite-name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Sam Okello"
+          autoComplete="name"
+        />
+      </div>
+      <div className="space-y-2">
         <Label htmlFor="invite-email">Work email</Label>
         <Input
           id="invite-email"
@@ -71,6 +73,7 @@ export function InviteMemberForm({ onSuccess }: { onSuccess?: () => void }) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="sam@company.com"
+          autoComplete="email"
         />
       </div>
       <div className="space-y-2">
@@ -78,13 +81,14 @@ export function InviteMemberForm({ onSuccess }: { onSuccess?: () => void }) {
         <select
           id="invite-role"
           value={role}
-          onChange={(e) =>
-            setRole(e.target.value as Exclude<UserRole, "admin">)
-          }
+          onChange={(e) => setRole(e.target.value as UserRole)}
           className="h-10 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
         >
-          <option value="marketer">Marketer</option>
-          <option value="reviewer">Reviewer</option>
+          {INVITABLE_ROLES.map((value) => (
+            <option key={value} value={value}>
+              {ROLE_LABELS[value]}
+            </option>
+          ))}
         </select>
       </div>
       {error ? (
@@ -93,8 +97,8 @@ export function InviteMemberForm({ onSuccess }: { onSuccess?: () => void }) {
         </p>
       ) : (
         <p className="text-xs text-muted-foreground">
-          Invites stay inside your company. The teammate verifies email, then
-          joins with the selected role.
+          We create their account, assign one role, and email a temporary
+          password so they can sign in immediately.
         </p>
       )}
       <Button type="submit" disabled={submitting}>

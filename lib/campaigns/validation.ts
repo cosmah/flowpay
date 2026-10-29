@@ -26,17 +26,12 @@ const requiredText = (label: string, min = 3, max = 200) =>
     .min(1, `${label} is required`)
     .min(min, `${label} must be at least ${min} characters`)
     .max(max, `${label} must be ${max} characters or fewer`)
-    .refine((value) => !/[<>$]/.test(value), `${label} contains invalid characters`)
 
-/** Campaign brief: objective, audience, product/service, channel, tone, customer action. */
+/** Manual campaign: title, post content, channel, optional banners. */
 export const campaignBriefSchema = z.object({
   projectId: z.string().trim().min(1, "Select a project"),
   title: requiredText("Title", 3, 80),
-  objective: requiredText("Objective", 10, 280),
-  audience: requiredText("Audience", 3, 120),
-  productService: requiredText("Service or product", 3, 120),
-  tone: requiredText("Tone", 3, 80),
-  customerAction: requiredText("Desired customer action", 5, 160),
+  content: requiredText("Content", 10, 4000),
   channels: z
     .array(z.enum(CAMPAIGN_CHANNELS))
     .min(1, "Select at least one channel"),
@@ -48,6 +43,7 @@ export const campaignBriefSchema = z.object({
       (value) => !value || !Number.isNaN(Date.parse(value)),
       "Enter a valid deadline date"
     ),
+  imageUrls: z.array(z.string().url()).default([]),
   status: z.enum([
     "draft",
     "in_review",
@@ -61,25 +57,19 @@ export type CampaignFormValues = z.infer<typeof campaignBriefSchema>
 export function sanitizeBriefInput(input: {
   projectId?: string
   title: string
-  objective: string
-  audience: string
-  productService: string
-  tone: string
-  customerAction: string
+  content: string
   channels: string[]
   deadline?: string
+  imageUrls?: string[]
   status: CampaignStatus
 }): CampaignFormValues | { fields: Record<string, string>; message: string } {
   const parsed = campaignBriefSchema.safeParse({
     projectId: input.projectId ?? "",
     title: sanitizeAuthInput(input.title),
-    objective: sanitizeAuthInput(input.objective),
-    audience: sanitizeAuthInput(input.audience),
-    productService: sanitizeAuthInput(input.productService),
-    tone: sanitizeAuthInput(input.tone),
-    customerAction: sanitizeAuthInput(input.customerAction),
+    content: input.content.replace(/\u0000/g, "").trim(),
     channels: input.channels,
     deadline: input.deadline,
+    imageUrls: input.imageUrls ?? [],
     status: input.status,
   })
 
@@ -101,12 +91,9 @@ export function sanitizeBriefInput(input: {
 export function toBrief(values: CampaignFormValues): CampaignBrief {
   return {
     title: values.title,
-    objective: values.objective,
-    audience: values.audience,
-    productService: values.productService,
-    tone: values.tone,
-    customerAction: values.customerAction,
+    content: values.content,
     channels: values.channels,
     deadline: values.deadline,
+    imageUrls: values.imageUrls,
   }
 }

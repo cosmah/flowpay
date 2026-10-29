@@ -216,8 +216,8 @@ export function TeamList() {
           <DialogHeader>
             <DialogTitle>Invite member</DialogTitle>
             <DialogDescription>
-              Invite a marketer or reviewer to your company. They verify email,
-              then join with that role — never another company&apos;s data.
+              Add someone to your company with one role: admin, marketer, or
+              reviewer. We email them a temporary password to sign in.
             </DialogDescription>
           </DialogHeader>
           <InviteMemberForm onSuccess={() => setInviteOpen(false)} />

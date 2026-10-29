@@ -120,7 +120,7 @@ export type Database = {
           id: string
           company_id: string
           email: string
-          role: "marketer" | "reviewer"
+          role: ProfileRole
           invited_by: string | null
           token: string
           status: InvitationStatus
@@ -131,7 +131,7 @@ export type Database = {
           id?: string
           company_id: string
           email: string
-          role: "marketer" | "reviewer"
+          role: ProfileRole
           invited_by?: string | null
           token?: string
           status?: InvitationStatus
@@ -142,7 +142,7 @@ export type Database = {
           id?: string
           company_id?: string
           email?: string
-          role?: "marketer" | "reviewer"
+          role?: ProfileRole
           invited_by?: string | null
           token?: string
           status?: InvitationStatus
@@ -166,6 +166,7 @@ export type Database = {
           reviewer_email: string | null
           company_id: string | null
           project_id: string | null
+          banner_urls: string[]
           created_at: string
           updated_at: string
         }
@@ -173,16 +174,17 @@ export type Database = {
           id?: string
           title: string
           objective: string
-          audience: string
-          product: string
+          audience?: string
+          product?: string
           channel: string
-          tone: string
-          cta: string
+          tone?: string
+          cta?: string
           status?: CampaignRowStatus
           owner_email?: string | null
           reviewer_email?: string | null
           company_id?: string | null
           project_id?: string | null
+          banner_urls?: string[]
           created_at?: string
           updated_at?: string
         }
@@ -200,6 +202,7 @@ export type Database = {
           reviewer_email?: string | null
           company_id?: string | null
           project_id?: string | null
+          banner_urls?: string[]
           created_at?: string
           updated_at?: string
         }

@@ -5,22 +5,18 @@ import {
   CalendarDays,
   Flag,
   FolderKanban,
-  Gauge,
-  MessageSquareText,
-  MousePointerClick,
-  Package,
+  ImagePlus,
   Radio,
-  SlidersHorizontal,
-  Target,
   Type,
-  Users,
+  FileText,
+  X,
 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Slider } from "@/components/ui/slider"
 import { Textarea } from "@/components/ui/textarea"
+import { uploadCampaignImages } from "@/lib/campaigns/upload"
 import {
   CAMPAIGN_CHANNELS,
   CAMPAIGN_STATUSES,
@@ -28,26 +24,21 @@ import {
   toBrief,
   type CampaignFormValues,
 } from "@/lib/campaigns/validation"
+import { createClient } from "@/lib/supabase/client"
 import { handleClientError } from "@/lib/errors"
 import type { Campaign, CampaignStatus, Project } from "@/types"
 import { cn } from "@/lib/utils"
 
-type Fields = Partial<Record<keyof CampaignFormValues | "form", string>>
-
-const PRIORITY_LABELS = ["Later", "Low", "Steady", "High", "Critical"] as const
-const AMBITION_LABELS = ["Soft", "Warm", "Balanced", "Bold", "Disruptive"] as const
+type Fields = Partial<Record<keyof CampaignFormValues | "form" | "images", string>>
 
 function emptyValues(projectId: string): CampaignFormValues {
   return {
     projectId,
     title: "",
-    objective: "",
-    audience: "",
-    productService: "",
-    tone: "",
-    customerAction: "",
+    content: "",
     channels: [],
     deadline: undefined,
+    imageUrls: [],
     status: "draft",
   }
 }
@@ -56,13 +47,10 @@ function fromCampaign(campaign: Campaign): CampaignFormValues {
   return {
     projectId: campaign.projectId,
     title: campaign.brief.title,
-    objective: campaign.brief.objective,
-    audience: campaign.brief.audience,
-    productService: campaign.brief.productService,
-    tone: campaign.brief.tone,
-    customerAction: campaign.brief.customerAction,
+    content: campaign.brief.content,
     channels: campaign.brief.channels as CampaignFormValues["channels"],
     deadline: campaign.brief.deadline,
+    imageUrls: campaign.brief.imageUrls,
     status: campaign.status,
   }
 }
@@ -113,7 +101,6 @@ export function CampaignForm({
   submitLabel,
   onSubmit,
   onCancel,
-  compact = false,
 }: {
   mode: "create" | "edit"
   initial?: Campaign
@@ -135,11 +122,7 @@ export function CampaignForm({
   )
   const [fields, setFields] = useState<Fields>({})
   const [submitting, setSubmitting] = useState(false)
-  const [priority, setPriority] = useState(3)
-  const [ambition, setAmbition] = useState(3)
-
-  const priorityLabel = PRIORITY_LABELS[priority - 1]
-  const ambitionLabel = AMBITION_LABELS[ambition - 1]
+  const [uploading, setUploading] = useState(false)
 
   const selectClassName = cn(
     "h-10 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none",
@@ -151,11 +134,7 @@ export function CampaignForm({
     const checks = [
       values.projectId,
       values.title.trim(),
-      values.objective.trim(),
-      values.audience.trim(),
-      values.productService.trim(),
-      values.tone.trim(),
-      values.customerAction.trim(),
+      values.content.trim(),
       values.channels.length > 0,
     ]
     return checks.filter(Boolean).length
@@ -182,30 +161,76 @@ export function CampaignForm({
     if (fields.channels) setFields((prev) => ({ ...prev, channels: undefined }))
   }
 
+  function removeImage(url: string) {
+    setValues((prev) => ({
+      ...prev,
+      imageUrls: prev.imageUrls.filter((item) => item !== url),
+    }))
+  }
+
+  async function onPickImages(fileList: FileList | null) {
+    if (!fileList?.length) return
+    setUploading(true)
+    setFields((prev) => ({ ...prev, images: undefined }))
+    try {
+      const supabase = createClient()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      const { data: profile } = user
+        ? await supabase
+            .from("profiles")
+            .select("company_id")
+            .eq("id", user.id)
+            .maybeSingle()
+        : { data: null }
+
+      if (!profile?.company_id) {
+        setFields({ images: "Join a company before uploading images." })
+        toast.error("Join a company before uploading images.")
+        return
+      }
+
+      const result = await uploadCampaignImages(
+        Array.from(fileList),
+        profile.company_id
+      )
+      if ("error" in result) {
+        setFields({ images: result.error })
+        toast.error(result.error)
+        return
+      }
+
+      setValues((prev) => ({
+        ...prev,
+        imageUrls: [...prev.imageUrls, ...result.urls],
+      }))
+      toast.success(
+        result.urls.length === 1
+          ? "Image uploaded."
+          : `${result.urls.length} images uploaded.`
+      )
+    } catch (error) {
+      handleClientError(error)
+    } finally {
+      setUploading(false)
+    }
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (submitting) return
+    if (submitting || uploading) return
 
     setFields({})
-    const toneWithVoice = values.tone.trim() ? values.tone : ambitionLabel
-
     const result = sanitizeBriefInput({
       ...values,
-      tone: toneWithVoice,
       deadline: values.deadline ?? "",
+      imageUrls: values.imageUrls,
     })
 
     if ("fields" in result) {
       setFields(result.fields)
       toast.error(result.message)
-      return
-    }
-
-    if (priority >= 4 && !result.deadline) {
-      setFields({
-        deadline: "High-priority campaigns should include a deadline.",
-      })
-      toast.error("Add a deadline for high-priority work.")
       return
     }
 
@@ -227,12 +252,10 @@ export function CampaignForm({
     <form onSubmit={handleSubmit} noValidate className="w-full space-y-6">
       <div className="flex w-full items-center justify-between gap-3 border-b border-border/60 pb-3">
         <p className="text-sm text-muted-foreground">
-          {compact
-            ? "Capture the brief essentials."
-            : "Required fields are validated before save."}
+          Write the post content and attach banner images.
         </p>
         <p className="shrink-0 text-sm font-medium tabular-nums text-[var(--rx-ink)]">
-          {filledCount}/8 ready
+          {filledCount}/4 ready
         </p>
       </div>
 
@@ -280,89 +303,67 @@ export function CampaignForm({
 
         <FieldShell
           className="xl:col-span-12"
-          icon={<Target className="size-3.5" aria-hidden />}
-          label="Objective"
-          htmlFor="objective"
-          error={fields.objective}
-          hint="What should success look like for this campaign?"
+          icon={<FileText className="size-3.5" aria-hidden />}
+          label="Content"
+          htmlFor="content"
+          error={fields.content}
+          hint="The message that will be posted with your banner images."
         >
           <Textarea
-            id="objective"
-            value={values.objective}
-            aria-invalid={Boolean(fields.objective)}
-            placeholder="Drive qualified demos from product marketers in the next quarter."
-            className="min-h-28"
-            onChange={(event) => update("objective", event.target.value)}
+            id="content"
+            value={values.content}
+            aria-invalid={Boolean(fields.content)}
+            placeholder="Write the exact post copy for this campaign…"
+            className="min-h-40"
+            onChange={(event) => update("content", event.target.value)}
           />
         </FieldShell>
 
         <FieldShell
-          className="xl:col-span-4"
-          icon={<Users className="size-3.5" aria-hidden />}
-          label="Audience"
-          htmlFor="audience"
-          error={fields.audience}
+          className="xl:col-span-12"
+          icon={<ImagePlus className="size-3.5" aria-hidden />}
+          label="Banner images"
+          htmlFor="images"
+          error={fields.images}
+          hint="Upload any image type (JPG, PNG, GIF, WebP, SVG, and more). Multiple banners allowed."
         >
           <Input
-            id="audience"
-            value={values.audience}
-            aria-invalid={Boolean(fields.audience)}
-            placeholder="Who needs to hear this?"
-            className="h-10"
-            onChange={(event) => update("audience", event.target.value)}
+            id="images"
+            type="file"
+            accept="image/*"
+            multiple
+            disabled={uploading}
+            className="h-10 cursor-pointer pt-1.5"
+            onChange={(event) => {
+              void onPickImages(event.target.files)
+              event.target.value = ""
+            }}
           />
-        </FieldShell>
-
-        <FieldShell
-          className="xl:col-span-4"
-          icon={<Package className="size-3.5" aria-hidden />}
-          label="Service or product"
-          htmlFor="productService"
-          error={fields.productService}
-        >
-          <Input
-            id="productService"
-            value={values.productService}
-            aria-invalid={Boolean(fields.productService)}
-            placeholder="Studio Plan"
-            className="h-10"
-            onChange={(event) => update("productService", event.target.value)}
-          />
-        </FieldShell>
-
-        <FieldShell
-          className="xl:col-span-4"
-          icon={<MessageSquareText className="size-3.5" aria-hidden />}
-          label="Tone"
-          htmlFor="tone"
-          error={fields.tone}
-          hint={`Voice leans ${ambitionLabel.toLowerCase()} when empty.`}
-        >
-          <Input
-            id="tone"
-            value={values.tone}
-            aria-invalid={Boolean(fields.tone)}
-            placeholder="Confident, clear, human"
-            className="h-10"
-            onChange={(event) => update("tone", event.target.value)}
-          />
-        </FieldShell>
-
-        <FieldShell
-          className="xl:col-span-4"
-          icon={<MousePointerClick className="size-3.5" aria-hidden />}
-          label="Desired customer action"
-          htmlFor="customerAction"
-          error={fields.customerAction}
-        >
-          <Input
-            id="customerAction"
-            value={values.customerAction}
-            aria-invalid={Boolean(fields.customerAction)}
-            placeholder="Book a demo / Start a trial"
-            className="h-10"
-            onChange={(event) => update("customerAction", event.target.value)}
-          />
+          {values.imageUrls.length > 0 ? (
+            <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+              {values.imageUrls.map((url) => (
+                <li
+                  key={url}
+                  className="relative overflow-hidden rounded-lg border border-border/70 bg-muted/20"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={url}
+                    alt="Campaign banner"
+                    className="aspect-[4/3] w-full object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeImage(url)}
+                    className="absolute top-1.5 right-1.5 rounded-full bg-background/90 p-1 text-foreground shadow-sm"
+                    aria-label="Remove image"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </FieldShell>
 
         <FieldShell
@@ -371,7 +372,7 @@ export function CampaignForm({
           label="Deadline"
           htmlFor="deadline"
           error={fields.deadline}
-          hint={priority >= 4 ? "Recommended for high priority." : "Optional"}
+          hint="Optional"
         >
           <Input
             id="deadline"
@@ -408,11 +409,11 @@ export function CampaignForm({
         </FieldShell>
 
         <FieldShell
-          className="xl:col-span-12"
+          className="xl:col-span-4"
           icon={<Radio className="size-3.5" aria-hidden />}
           label="Channels"
           error={fields.channels}
-          hint="Select at least one channel."
+          hint="Where this post will go."
         >
           <div className="flex flex-wrap gap-2">
             {CAMPAIGN_CHANNELS.map((channel) => {
@@ -435,54 +436,6 @@ export function CampaignForm({
             })}
           </div>
         </FieldShell>
-
-        {!compact ? (
-          <>
-            <FieldShell
-              className="xl:col-span-6"
-              icon={<Gauge className="size-3.5" aria-hidden />}
-              label={`Priority · ${priorityLabel}`}
-              hint="High priority requires a deadline."
-            >
-              <div className="border border-border/70 bg-muted/20 px-4 py-4">
-                <Slider
-                  min={1}
-                  max={5}
-                  step={1}
-                  value={[priority]}
-                  onValueChange={(next) => setPriority(next[0] ?? 3)}
-                  aria-label="Campaign priority"
-                />
-                <div className="mt-3 flex justify-between text-[10px] uppercase tracking-wide text-muted-foreground">
-                  <span>Later</span>
-                  <span>Critical</span>
-                </div>
-              </div>
-            </FieldShell>
-
-            <FieldShell
-              className="xl:col-span-6"
-              icon={<SlidersHorizontal className="size-3.5" aria-hidden />}
-              label={`Creative ambition · ${ambitionLabel}`}
-              hint="Used as tone when the tone field is empty."
-            >
-              <div className="border border-border/70 bg-muted/20 px-4 py-4">
-                <Slider
-                  min={1}
-                  max={5}
-                  step={1}
-                  value={[ambition]}
-                  onValueChange={(next) => setAmbition(next[0] ?? 3)}
-                  aria-label="Creative ambition"
-                />
-                <div className="mt-3 flex justify-between text-[10px] uppercase tracking-wide text-muted-foreground">
-                  <span>Soft</span>
-                  <span>Disruptive</span>
-                </div>
-              </div>
-            </FieldShell>
-          </>
-        ) : null}
       </div>
 
       {fields.form ? (
@@ -492,12 +445,18 @@ export function CampaignForm({
       ) : null}
 
       <div className="flex flex-wrap items-center gap-2 border-t border-border/60 pt-4">
-        <Button type="submit" disabled={submitting} className="h-10 min-w-36">
-          {submitting
-            ? mode === "create"
-              ? "Creating…"
-              : "Saving…"
-            : submitLabel}
+        <Button
+          type="submit"
+          disabled={submitting || uploading}
+          className="h-10 min-w-36"
+        >
+          {uploading
+            ? "Uploading…"
+            : submitting
+              ? mode === "create"
+                ? "Creating…"
+                : "Saving…"
+              : submitLabel}
         </Button>
         {onCancel ? (
           <Button
@@ -505,7 +464,7 @@ export function CampaignForm({
             variant="outline"
             className="h-10"
             onClick={onCancel}
-            disabled={submitting}
+            disabled={submitting || uploading}
           >
             Cancel
           </Button>

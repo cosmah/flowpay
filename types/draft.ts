@@ -7,7 +7,8 @@ export interface Draft {
   format: DraftFormat
   content: string
   status: DraftStatus
-  generationSource: "ai" | "template"
+  generationSource: "manual" | "template"
+  imageUrl?: string
   /** Marketer who submitted the draft (set at submit time). */
   authorName?: string
   reviewComments: ReviewComment[]
